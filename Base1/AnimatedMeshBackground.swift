@@ -17,16 +17,15 @@ struct AnimatedMeshBackground: View {
                 width: 3,
                 height: 3,
                 points: [
-                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                    [0.0, 0.5], [0.5 + v, 0.5 - v], [1.0, 0.5 - v],
-                    [0.0, 1.0], [0.5 - v, 1.0], [1.0, 1.0],
+                    SIMD2<Float>(0.0, 0.0), SIMD2<Float>(0.5, 0.0), SIMD2<Float>(1.0, 0.0),
+                    SIMD2<Float>(0.0, 0.5), SIMD2<Float>(0.5 + v, 0.5 - v), SIMD2<Float>(1.0, 0.5 - v),
+                    SIMD2<Float>(0.0, 1.0), SIMD2<Float>(0.5 - v, 1.0), SIMD2<Float>(1.0, 1.0),
                 ],
                 colors: [
-                    .red, .blue, .blue,
-                    .green, .yellow, .blue,
-                    .black, .cyan, .blue,
+                    .red, .purple, .blue,
+                    .orange, .yellow, .cyan,
+                    .pink, .indigo, .blue,
                 ])
-            .ignoresSafeArea()
         }
     }
 }
