@@ -25,7 +25,7 @@ struct Tab3View: View {
 
 #Preview {
     ZStack {
-        AnimatedMeshBackground()
+        
         Tab3View()
         
     }
