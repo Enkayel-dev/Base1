@@ -22,9 +22,6 @@ struct MainTabView: View {
             // Main content area with slide transitions
             GeometryReader { geometry in
                 ZStack {
-                    // Explicitly set clear to prevent default backgrounds
-                    Color.clear
-                    
                     Tab1View()
                         .offset(x: offsetForTab(0, screenWidth: geometry.size.width))
                         .zIndex(selectedTab == 0 ? 1 : 0)
@@ -60,6 +57,8 @@ struct MainTabView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 12)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 48))
                     }
                     .padding(.horizontal, 8)
                     .padding(.bottom, 8)
@@ -239,47 +238,10 @@ struct NowPlayingMiniPlayerContent: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            // Progress timeline with Liquid Glass
-            GeometryReader { geometry in
-                let trackWidth = geometry.size.width
-                
-                ZStack(alignment: .leading) {
-                    // Background track
-                    Capsule()
-                        .fill(.quaternary)
-                        .frame(height: 3)
-                    
-                    // Progress track with glass effect
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: trackWidth * progress, height: 3)
-                        .glassEffect(.regular, in: .capsule)
-                        .glassEffectID("progress", in: namespace)
-                    
-                    // Draggable handle with Liquid Glass
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 16, height: 16)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                        .glassEffectID("handle", in: namespace)
-                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        .offset(x: (trackWidth * progress) - 8) // Center the circle on the progress
-                }
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            // Use the actual geometry width from context
-                            progress = min(max(0, value.location.x / trackWidth), 1.0)
-                        }
-                )
-            }
-            .frame(height: 20) // Increased height to accommodate the handle
-            .padding(.horizontal, 4)
-            
             // Main player controls
             HStack(spacing: 12) {
                 // Album artwork
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(.blue.gradient)
                     .frame(width: 48, height: 48)
                     .overlay {
@@ -329,6 +291,43 @@ struct NowPlayingMiniPlayerContent: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            
+            // Progress timeline with Liquid Glass - now at the bottom
+            GeometryReader { geometry in
+                let trackWidth = geometry.size.width
+                
+                ZStack(alignment: .leading) {
+                    // Background track
+                    Capsule()
+                        .fill(.quaternary)
+                        .frame(height: 3)
+                    
+                    // Progress track with glass effect
+                    Capsule()
+                        .fill(.white)
+                        .frame(width: trackWidth * progress, height: 3)
+                        .glassEffect(.regular, in: .capsule)
+                        .glassEffectID("progress", in: namespace)
+                    
+                    // Draggable handle with Liquid Glass
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 16, height: 16)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                        .glassEffectID("handle", in: namespace)
+                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        .offset(x: (trackWidth * progress) - 8) // Center the circle on the progress
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            // Use the actual geometry width from context
+                            progress = min(max(0, value.location.x / trackWidth), 1.0)
+                        }
+                )
+            }
+            .frame(height: 20) // Increased height to accommodate the handle
+            .padding(.horizontal, 4)
         }
         .onAppear {
             // Simulate playback progress
