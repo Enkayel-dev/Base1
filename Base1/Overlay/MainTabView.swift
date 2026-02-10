@@ -22,14 +22,19 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
+            
+            
             AnimatedMeshBackground()
             
-            SettingsButton()
-                .zIndex(100)
-            
             TabContentView()
+           
+            BusinessLogo()
+           
+            SettingsButton()
+    
+            
         }
-        .ignoresSafeArea()
+        
         .environment(router)
         .environment(searchState)
         .environment(workflowManager)

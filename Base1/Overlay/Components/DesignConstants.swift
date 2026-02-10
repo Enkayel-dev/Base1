@@ -39,6 +39,11 @@ enum DesignConstants {
         static let buttonSize: CGFloat = 44
     }
     
+    // MARK: - BusinessLogo
+    enum BusinessLogo {
+        static let buttonSize: CGFloat = 44
+    }
+    
     // MARK: - Animation
     enum Animation {
         static let tabSwitchResponse: Double = 0.35

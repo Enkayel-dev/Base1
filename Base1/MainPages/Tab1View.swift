@@ -10,22 +10,25 @@ import SwiftUI
 struct Tab1View: View {
     var body: some View {
         
-            VStack {
-                Text("Tab 1")
+        VStack(alignment: .leading) {
+            HStack {
+                
+                Text("Clients")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
                 
-                Text("First tab content")
-                    .foregroundStyle(.white.opacity(0.8))
             }
+                Spacer()
+        
+    }
         }
     }
 
 
 #Preview {
     ZStack {
-        
+        AnimatedMeshBackground()
         Tab1View()
         
     }
