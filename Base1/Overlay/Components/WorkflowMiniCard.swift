@@ -77,17 +77,25 @@ struct WorkflowMiniCard: View {
     
     @ViewBuilder
     private func workflowIcon(_ workflow: Workflow) -> some View {
-        RoundedRectangle(cornerRadius: DesignConstants.WorkflowCard.iconCornerRadius)
-            .fill(workflow.iconColor.gradient)
+        Button {
+            // Action to expand workflow details or navigate
+            // Can be connected to a detail view or sheet
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: DesignConstants.WorkflowCard.iconCornerRadius)
+                    .fill(workflow.iconColor.gradient)
+                
+                Image(systemName: workflow.icon)
+                    .font(.title2)
+                    .foregroundStyle(.white)
+            }
             .frame(
                 width: DesignConstants.WorkflowCard.iconSize,
                 height: DesignConstants.WorkflowCard.iconSize
             )
-            .overlay {
-                Image(systemName: workflow.icon)
-                    .foregroundStyle(.white)
-            }
-            .glassEffect(.regular, in: .rect(cornerRadius: 8))
+        }
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: DesignConstants.WorkflowCard.iconCornerRadius))
+        .glassEffectID("workflow-icon", in: glassNS)
     }
 }
 
@@ -96,6 +104,7 @@ struct WorkflowMiniCard: View {
 struct WorkflowProgressBar: View {
     let progress: Double
     let status: Workflow.Status
+    @Namespace private var glassNS
     
     var body: some View {
         GeometryReader { geometry in
@@ -116,14 +125,20 @@ struct WorkflowProgressBar: View {
                     )
                     .animation(.spring(response: 0.4), value: progress)
                 
-                // Handle
+                // Handle with liquid glass effect
                 Circle()
-                    .fill(.white)
+                    .fill(.ultraThinMaterial)
                     .frame(
                         width: DesignConstants.WorkflowCard.handleSize,
                         height: DesignConstants.WorkflowCard.handleSize
                     )
+                    .overlay {
+                        Circle()
+                            .strokeBorder(.white.opacity(0.3), lineWidth: 1)
+                    }
                     .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .glassEffectID("progress-handle", in: glassNS)
                     .offset(x: (trackWidth * progress) - (DesignConstants.WorkflowCard.handleSize / 2))
                     .animation(.spring(response: 0.4), value: progress)
             }

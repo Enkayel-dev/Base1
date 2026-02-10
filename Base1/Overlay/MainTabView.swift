@@ -65,6 +65,15 @@ private struct TabContentView: View {
                 Tab3View()
                     .offset(x: router.offsetForTab(2, screenWidth: geometry.size.width))
                     .zIndex(router.selectedTab == 2 ? 1 : 0)
+                
+                Tab4View()
+                    .offset(x: router.offsetForTab(3, screenWidth: geometry.size.width))
+                    .zIndex(router.selectedTab == 3 ? 1 : 0)
+                
+                Tab5View()
+                    .offset(x: router.offsetForTab(4, screenWidth: geometry.size.width))
+                    .zIndex(router.selectedTab == 4 ? 1 : 0)
+                
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(

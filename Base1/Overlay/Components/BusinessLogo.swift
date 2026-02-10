@@ -11,7 +11,7 @@ struct BusinessLogo: View {
     var action: () -> Void = {}
     
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             HStack {
                 
                 Button(action: action) {
@@ -24,9 +24,11 @@ struct BusinessLogo: View {
                         )
                 }
                 .glassEffect(.regular.interactive(), in: .circle)
-                .padding(.trailing, 20)
+                .padding(.leading, 20)
+                Spacer()
             }
             Spacer()
         }
     }
 }
+

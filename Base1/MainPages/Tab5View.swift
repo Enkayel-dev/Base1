@@ -1,19 +1,19 @@
 //
-//  Tab2View.swift
+//  Tab5View.swift
 //  Base1
 //
-//  Created by Nicholas Lachapelle on 2026-02-09.
+//  Created by Nicholas Lachapelle on 2026-02-10.
 //
 
 import SwiftUI
 
-struct Tab2View: View {
+struct Tab5View: View {
     var body: some View {
         
         VStack(alignment: .leading) {
             HStack {
                 
-                Text("Schedule")
+                Text("Finances")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
@@ -24,13 +24,10 @@ struct Tab2View: View {
     }
         }
     }
-
-
 #Preview {
     ZStack {
-      
-        Tab2View()
+        
+        Tab5View()
         
     }
 }
-

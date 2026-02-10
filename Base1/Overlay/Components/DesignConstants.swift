@@ -20,9 +20,9 @@ enum DesignConstants {
     // MARK: - Tab Bar
     enum TabBar {
         static let itemHeight: CGFloat = 36
-        static let activePaddingH: CGFloat = 16
-        static let inactivePaddingH: CGFloat = 12
-        static let spacing: CGFloat = 8
+        static let activePaddingH: CGFloat = 12  // Reduced from 16
+        static let inactivePaddingH: CGFloat = 8  // Reduced from 12
+        static let spacing: CGFloat = 4  // Reduced from 8
     }
     
     // MARK: - Workflow Card

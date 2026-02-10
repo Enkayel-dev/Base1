@@ -10,19 +10,20 @@ import SwiftUI
 struct Tab3View: View {
     var body: some View {
         
-            VStack {
-                Text("Tab 3")
+        VStack(alignment: .leading) {
+            HStack {
+                
+                Text("Projects")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
                 
-                Text("Third tab content")
-                    .foregroundStyle(.white.opacity(0.8))
             }
+                Spacer()
+        
+    }
         }
     }
-
-
 #Preview {
     ZStack {
         

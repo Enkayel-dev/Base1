@@ -1,19 +1,20 @@
 //
-//  Tab2View.swift
+//  Tab4.swift
 //  Base1
 //
-//  Created by Nicholas Lachapelle on 2026-02-09.
+//  Created by Nicholas Lachapelle on 2026-02-10.
 //
+
 
 import SwiftUI
 
-struct Tab2View: View {
+struct Tab4View: View {
     var body: some View {
         
         VStack(alignment: .leading) {
             HStack {
                 
-                Text("Schedule")
+                Text("Resources")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
@@ -24,13 +25,10 @@ struct Tab2View: View {
     }
         }
     }
-
-
 #Preview {
     ZStack {
-      
-        Tab2View()
+        
+        Tab4View()
         
     }
 }
-

@@ -13,9 +13,11 @@ struct CustomBottomTabBar: View {
     @Namespace private var glassNS
     
     private let tabs: [TabItem] = [
-        TabItem(index: 0, label: "Home", icon: "house.fill"),
-        TabItem(index: 1, label: "Browse", icon: "square.grid.2x2.fill"),
-        TabItem(index: 2, label: "Library", icon: "play.square.stack.fill"),
+        TabItem(index: 0, label: "Clients", icon: "house.fill"),
+        TabItem(index: 1, label: "Schedule", icon: "square.grid.2x2.fill"),
+        TabItem(index: 2, label: "Projects", icon: "play.square.stack.fill"),
+        TabItem(index: 3, label: "Resources", icon: "play.square.stack.fill"),
+        TabItem(index: 4, label: "Finances", icon: "play.square.stack.fill"),
     ]
     
     var body: some View {
@@ -28,7 +30,7 @@ struct CustomBottomTabBar: View {
             
             searchToggleButton
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 8)  // Reduced from 12
         .padding(.vertical, 8)
     }
     
@@ -42,7 +44,7 @@ struct CustomBottomTabBar: View {
             router.select(tab.index)
             searchState.dismiss()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 10) {
                 Image(systemName: tab.icon)
                     .font(.body)
                 if isSelected {

@@ -8,22 +8,26 @@
 import SwiftUI
 
 struct Tab1View: View {
+    @State private var selectedFilter: FilterOption = .all
+    
     var body: some View {
-        
-        VStack(alignment: .leading) {
-            HStack {
-                
-                Text("Clients")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                
-            }
-                Spacer()
-        
-    }
+        VStack(spacing: 20) {
+            // Centered title at the top
+            Text("Clients")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 0)
+            
+            // Filter picker
+            LiquidGlassFilterPicker(selectedFilter: $selectedFilter)
+                .padding(.horizontal)
+            
+            Spacer()
         }
     }
+}
 
 
 #Preview {
