@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Observation
 
 @main
 struct Base1App: App {
@@ -9,14 +10,14 @@ struct Base1App: App {
     @State private var tabRouter = TabRouter()
     @State private var searchState = SearchState()
     @State private var workflowService = WorkflowService()
-    @State private var businessService = BusinessService()
+    @State private var businessManager: BusinessManager   // ← use manager directly
 
     private let backgroundService = BackgroundService()
 
     let modelContainer: ModelContainer
-    let businessContext: BusinessContext   // ← ADD THIS
 
     init() {
+        // MARK: - ModelContainer setup
         let schema = Schema(Base1SchemaV1.models)
         let config = ModelConfiguration()
 
@@ -38,8 +39,8 @@ struct Base1App: App {
             )
         }
 
-        // Initialize BusinessContext AFTER ModelContainer
-        businessContext = BusinessContext(container: modelContainer)
+        // MARK: - Initialize BusinessManager AFTER ModelContainer
+        businessManager = BusinessManager(container: modelContainer)
     }
 
     var body: some Scene {
@@ -49,7 +50,7 @@ struct Base1App: App {
                 .environment(tabRouter)
                 .environment(searchState)
                 .environment(workflowService)
-                .environment(businessContext)   // ← INJECT BUSINESS CONTEXT
+                .environment(businessManager)   // ← inject manager instead of context
         }
         .modelContainer(modelContainer)
     }

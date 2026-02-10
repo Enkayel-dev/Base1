@@ -71,6 +71,7 @@ public final class Client {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         firstName: String,
         lastName: String,
         companyName: String? = nil,
@@ -79,6 +80,7 @@ public final class Client {
         address: String? = nil,
         status: ClientStatus = .lead
     ) {
+        self.businessKey = businessKey
         self.firstName = firstName
         self.lastName = lastName
         self.companyName = companyName

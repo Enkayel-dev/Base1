@@ -13,6 +13,7 @@ public final class Business {
 
     // MARK: - Fields
     public var businessKey: String
+    public var ownerAppleUserID: String  
     public var name: String
     public var ownerName: String
     public var email: String?
@@ -26,7 +27,6 @@ public final class Business {
     public var createdAt: Date
 
     // MARK: - Relationships
-
     @Relationship(deleteRule: .cascade, inverse: \Client.business)
     public var clients: [Client] = []
 
@@ -40,9 +40,9 @@ public final class Business {
     public var workflowTemplates: [WorkflowTemplate] = []
 
     // MARK: - Init
-
     public init(
         businessKey: String,
+        ownerAppleUserID: String,
         name: String,
         ownerName: String,
         email: String? = nil,
@@ -50,6 +50,7 @@ public final class Business {
         address: String? = nil
     ) {
         self.businessKey = businessKey
+        self.ownerAppleUserID = ownerAppleUserID
         self.name = name
         self.ownerName = ownerName
         self.email = email

@@ -13,6 +13,8 @@ import SwiftData
 extension Business {
     static var sample: Business {
         Business(
+            businessKey: "BUS_SAMPLE1",            // sample key
+            ownerAppleUserID: "SAMPLE_APPLE_USER", // sample Apple ID
             name: "Tremblay & Sons Construction",
             ownerName: "Nicholas Lachapelle",
             email: "info@tremcon.ca",
@@ -24,9 +26,10 @@ extension Business {
 // MARK: - Sample Clients
 
 extension Client {
-    static var sampleClients: [Client] {
+    static func sampleClients(forBusinessKey businessKey: String) -> [Client] {
         [
             Client(
+                businessKey: businessKey,
                 firstName: "Marie",
                 lastName: "Tremblay",
                 companyName: "Tremblay Construction",
@@ -35,6 +38,8 @@ extension Client {
                 status: .active
             ),
             Client(
+                
+                businessKey: businessKey,
                 firstName: "Jean",
                 lastName: "Gagnon",
                 email: "jean.g@email.com",
@@ -42,6 +47,7 @@ extension Client {
                 status: .lead
             ),
             Client(
+                businessKey: businessKey,
                 firstName: "Sophie",
                 lastName: "Roy",
                 companyName: "Roy Design Studio",
@@ -49,6 +55,7 @@ extension Client {
                 status: .active
             ),
             Client(
+                businessKey: businessKey,
                 firstName: "Marc",
                 lastName: "Lefebvre",
                 email: "marc.l@email.com",
@@ -229,7 +236,7 @@ enum SampleDataContainer {
         context.insert(business)
 
         // Clients
-        let clients = Client.sampleClients
+        let clients = Client.sampleClients(forBusinessKey: business.businessKey)
         clients.forEach { client in
             client.business = business
             context.insert(client)
@@ -248,6 +255,7 @@ enum SampleDataContainer {
             resource.business = business
             context.insert(resource)
         }
+
         // Assign resources to projects
         if projects.count >= 3, resources.count >= 2 {
             projects[0].resources.append(resources[0])
@@ -266,6 +274,7 @@ enum SampleDataContainer {
         let template = WorkflowTemplate.sampleNewLeadTemplate
         template.business = business
         context.insert(template)
+
 
         return container
     }

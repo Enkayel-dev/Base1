@@ -7,14 +7,16 @@
 
 import SwiftUI
 import SwiftData
+import Observation
 
 struct BusinessProfile: View {
 
-    @Environment(BusinessContext.self) private var businessContext
-    @Query private var businesses: [Business]
+    // Use the new combined manager
+    @Environment(BusinessManager.self) private var businessManager
 
+    // Computed property to get the current business
     private var business: Business? {
-        businesses.first(where: { $0.businessKey == businessContext.businessKey })
+        businessManager.currentBusiness
     }
 
     var body: some View {
@@ -23,15 +25,28 @@ struct BusinessProfile: View {
             Text("Business Profile")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .center)
             if let business {
                 List {
                     Section("Information") {
-                        Text(business.name)
-                        Text(business.ownerName)
+                        Text("Name: \(business.name)")
+                        Text("Owner: \(business.ownerName)")
                         Text("Business Key: \(business.businessKey)")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                        Text("Apple ID: \(business.ownerAppleUserID)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        if let email = business.email {
+                            Text("Email: \(email)")
+                        }
+                        if let phone = business.phone {
+                            Text("Phone: \(phone)")
+                        }
+                        if let address = business.address {
+                            Text("Address: \(address)")
+                        }
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -42,15 +57,6 @@ struct BusinessProfile: View {
 
             Spacer()
         }
-    }
-}
-
-
-#Preview {
-    ZStack {
-        Color.teal.ignoresSafeArea()
-        BusinessProfile()
-            .environment(TabRouter())
-            .environment(BusinessService())
+        .padding()
     }
 }
