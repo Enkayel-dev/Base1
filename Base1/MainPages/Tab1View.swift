@@ -32,7 +32,7 @@ struct Tab1View: View {
 
 #Preview {
     ZStack {
-        AnimatedMeshBackground()
+        AnimatedMeshBackground(scheme: .gold)
         Tab1View()
         
     }

@@ -75,7 +75,6 @@ enum FilterOption: String, CaseIterable, Identifiable {
         
         var body: some View {
             ZStack {
-                AnimatedMeshBackground()
                 
                 VStack(spacing: 20) {
                     Text("Selected: \(selectedFilter.title)")

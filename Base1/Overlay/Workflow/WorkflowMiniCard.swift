@@ -2,23 +2,27 @@
 //  WorkflowMiniCard.swift
 //  Base1
 //
-//  Created by Nicholas Lachapelle on 2026-02-09.
+//  Refactored for Swift 6 / SwiftData / Observation
 //
 
 import SwiftUI
+import Observation
 
 struct WorkflowMiniCard: View {
-    @Environment(WorkflowManager.self) private var workflowManager
+    
+    // MARK: - Injected Workflow Service
+    @Environment(WorkflowService.self) private var workflowService
     @Namespace private var glassNS
     
-    private var workflow: Workflow? { workflowManager.activeWorkflow }
+    private var workflow: Workflow? { workflowService.activeWorkflow }
     
     var body: some View {
         if let workflow {
             VStack(spacing: 8) {
-                // Main row
+                // MARK: - Main Row
                 HStack(spacing: 12) {
-                    // Workflow icon
+                    
+                    // Workflow Icon
                     workflowIcon(workflow)
                     
                     // Info
@@ -36,12 +40,13 @@ struct WorkflowMiniCard: View {
                     
                     // Controls
                     HStack(spacing: 16) {
+                        // Pause / Resume
                         Button {
                             withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
-                                workflowManager.togglePause()
+                                workflowService.togglePause()
                             }
                         } label: {
-                            Image(systemName: workflow.status == .running ? "pause.fill" : "play.fill")
+                            Image(systemName: workflow.isActive ? "pause.fill" : "play.fill")
                                 .font(.title3)
                                 .frame(
                                     width: DesignConstants.Settings.buttonSize,
@@ -50,9 +55,10 @@ struct WorkflowMiniCard: View {
                         }
                         .glassEffect(.regular.interactive(), in: .circle)
                         
+                        // Skip / Next Step
                         Button {
                             withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
-                                workflowManager.skip()
+                                workflowService.skipStep()
                             }
                         } label: {
                             Image(systemName: "forward.fill")
@@ -68,18 +74,23 @@ struct WorkflowMiniCard: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 
-                // Progress bar
+                // Progress Bar
                 WorkflowProgressBar(progress: workflow.progress, status: workflow.status)
                     .padding(.horizontal, 4)
             }
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .shadow(radius: 4)
+            .padding(.horizontal)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
+    
+    // MARK: - Workflow Icon
     
     @ViewBuilder
     private func workflowIcon(_ workflow: Workflow) -> some View {
         Button {
-            // Action to expand workflow details or navigate
-            // Can be connected to a detail view or sheet
+            // Expand workflow details / navigate
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: DesignConstants.WorkflowCard.iconCornerRadius)
@@ -125,7 +136,7 @@ struct WorkflowProgressBar: View {
                     )
                     .animation(.spring(response: 0.4), value: progress)
                 
-                // Handle with liquid glass effect
+                // Handle
                 Circle()
                     .fill(.ultraThinMaterial)
                     .frame(

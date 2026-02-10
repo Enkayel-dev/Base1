@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Observation
 
 @Observable
 final class TabRouter {
@@ -18,12 +19,8 @@ final class TabRouter {
     }
     
     func offsetForTab(_ tab: Int, screenWidth: CGFloat) -> CGFloat {
-        if selectedTab == tab {
-            return 0
-        } else if selectedTab > tab {
-            return -screenWidth
-        } else {
-            return screenWidth
-        }
+        if selectedTab == tab { return 0 }
+        else if selectedTab > tab { return -screenWidth }
+        else { return screenWidth }
     }
 }
