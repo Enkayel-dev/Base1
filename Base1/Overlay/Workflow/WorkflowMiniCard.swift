@@ -76,11 +76,12 @@ struct WorkflowMiniCard: View {
                 
                 // Progress Bar
                 WorkflowProgressBar(progress: workflow.progress, status: workflow.status)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 12)
             }
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .shadow(radius: 4)
-            .padding(.horizontal)
+            // Background/Shadow removed to integrate cleanly into BottomBarView
+            //.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            //.shadow(radius: 4)
+            //.padding(.horizontal)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }

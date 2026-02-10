@@ -16,7 +16,7 @@ public final class WorkflowService {
     
     // Currently active workflow
     public var activeWorkflow: Workflow?
-
+    
     // Context for saving changes
     private var modelContext: ModelContext?
     
@@ -52,7 +52,7 @@ public final class WorkflowService {
         if workflow.currentStepIndex >= workflow.steps.count {
             completeWorkflow()
         } else {
-             save()
+            save()
         }
     }
     
@@ -99,7 +99,7 @@ public final class WorkflowService {
     }
     
     public func cancelWorkflow() {
-        guard let workflow = activeWorkflow else { return }
+        guard activeWorkflow != nil else { return }
         // Depending on requirements, we might delete it or mark as cancelled
         // For now, let's just clear active state.
         activeWorkflow = nil
@@ -112,37 +112,5 @@ public final class WorkflowService {
             print("Failed to save workflow state: \(error.localizedDescription)")
         }
     }
-    
-    // MARK: - Placeholder / Demo
-    
-    // Note: Creating a new instance each time. In a real app, fetch from context or create once.
-    public static var testWorkflow: Workflow {
-        Workflow(
-            id: "newLead",
-            title: "New Lead Workflow",
-            steps: [
-                WorkflowStep(
-                    id: "step1",
-                    title: "Fill client info",
-                    subtitle: "Complete all empty fields",
-                    viewKey: "ClientInfoView",
-                    requiresAction: true
-                ),
-                WorkflowStep(
-                    id: "step2",
-                    title: "Schedule Visit",
-                    subtitle: "Pick a date for on-site visit",
-                    viewKey: "ScheduleView",
-                    requiresAction: true
-                ),
-                WorkflowStep(
-                    id: "step3",
-                    title: "Project Setup",
-                    subtitle: "Prepare project tab",
-                    viewKey: "ProjectView",
-                    requiresAction: true
-                )
-            ]
-        )
-    }
 }
+

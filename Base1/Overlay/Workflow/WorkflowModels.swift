@@ -135,4 +135,37 @@ extension Color {
 
         self.init(red: r, green: g, blue: b, opacity: a)
     }
+    }
+
+
+extension Workflow {
+    public static var testWorkflow: Workflow {
+        Workflow(
+            id: "newLead",
+            title: "New Lead Workflow",
+            steps: [
+                WorkflowStep(
+                    id: "step1",
+                    title: "Fill client info",
+                    subtitle: "Complete all empty fields",
+                    viewKey: "ClientInfoView",
+                    requiresAction: true
+                ),
+                WorkflowStep(
+                    id: "step2",
+                    title: "Schedule Visit",
+                    subtitle: "Pick a date for on-site visit",
+                    viewKey: "ScheduleView",
+                    requiresAction: true
+                ),
+                WorkflowStep(
+                    id: "step3",
+                    title: "Project Setup",
+                    subtitle: "Prepare project tab",
+                    viewKey: "ProjectView",
+                    requiresAction: true
+                )
+            ]
+        )
+    }
 }

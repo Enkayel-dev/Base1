@@ -28,18 +28,13 @@ struct MainTabView: View {
             BusinessLogo()
             
             SettingsButton()
-            // Workflow player overlay (optional)
-            if workflowService.activeWorkflow != nil {
-                WorkflowMiniCard()
-                    .padding()
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+
+                    }
+            .onChange(of: tabRouter.selectedTab) { _, newIndex in
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    backgroundState.scheme = backgroundService.preferredScheme(for: newIndex)
+                }
             }
-                    }
-                    .onChange(of: tabRouter.selectedTab) { newIndex in
-                        withAnimation(.easeInOut(duration: 0.6)) {
-                            backgroundState.scheme = backgroundService.preferredScheme(for: newIndex)
-                        }
-                    }
                     .onAppear {
                         workflowService.setContext(modelContext)
                         
