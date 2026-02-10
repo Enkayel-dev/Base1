@@ -12,4 +12,5 @@ public enum MeshScheme: CaseIterable, Hashable {
     case crimson
     case mint
     case violet
+    case teal
 }

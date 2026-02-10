@@ -22,13 +22,15 @@ struct CustomBottomTabBar: View {
     
     var body: some View {
         HStack(spacing: DesignConstants.TabBar.spacing) {
-            ForEach(tabs) { tab in
-                tabButton(for: tab)
+            if !router.isSettingsActive && !router.isBusinessProfileActive {
+                ForEach(tabs) { tab in
+                    tabButton(for: tab)
+                }
+                
+                Spacer()
+                
+                searchToggleButton
             }
-            
-            Spacer()
-            
-            searchToggleButton
         }
         .padding(.horizontal, 8)  // Reduced from 12
         .padding(.vertical, 8)

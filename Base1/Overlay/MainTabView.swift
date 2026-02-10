@@ -25,16 +25,48 @@ struct MainTabView: View {
             
             TabContentView()
             
-            BusinessLogo()
-            
-            SettingsButton()
-
+            if !tabRouter.isSettingsActive {
+                BusinessLogo {
+                    withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
+                        tabRouter.isBusinessProfileActive.toggle()
                     }
-            .onChange(of: tabRouter.selectedTab) { _, newIndex in
-                withAnimation(.easeInOut(duration: 0.6)) {
+                }
+            }
+            
+            if !tabRouter.isBusinessProfileActive {
+                SettingsButton {
+                    withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
+                        tabRouter.isSettingsActive.toggle()
+                    }
+                }
+            }
+
+        }
+        .onChange(of: tabRouter.selectedTab) { _, newIndex in
+            withAnimation(.easeInOut(duration: 0.6)) {
+                if !tabRouter.isSettingsActive && !tabRouter.isBusinessProfileActive {
                     backgroundState.scheme = backgroundService.preferredScheme(for: newIndex)
                 }
             }
+        }
+        .onChange(of: tabRouter.isSettingsActive) { _, isActive in
+            withAnimation(.easeInOut(duration: 0.6)) {
+                if isActive {
+                    backgroundState.scheme = .violet
+                } else if !tabRouter.isBusinessProfileActive {
+                    backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
+                }
+            }
+        }
+        .onChange(of: tabRouter.isBusinessProfileActive) { _, isActive in
+            withAnimation(.easeInOut(duration: 0.6)) {
+                if isActive {
+                    backgroundState.scheme = .teal
+                } else if !tabRouter.isSettingsActive {
+                    backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
+                }
+            }
+        }
                     .onAppear {
                         workflowService.setContext(modelContext)
                         
@@ -55,6 +87,11 @@ struct MainTabView: View {
             var body: some View {
                 GeometryReader { geometry in
                     ZStack {
+                        BusinessProfile()
+                            .offset(x: tabRouter.businessProfileOffset(screenWidth: geometry.size.width))
+                            .zIndex(tabRouter.isBusinessProfileActive ? 2 : 0)
+                            
+                        // Tab 1
                         Tab1View()
                             .offset(x: tabRouter.offsetForTab(0, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 0 ? 1 : 0)
@@ -74,6 +111,10 @@ struct MainTabView: View {
                         Tab5View()
                             .offset(x: tabRouter.offsetForTab(4, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 4 ? 1 : 0)
+                            
+                        SettingsView()
+                            .offset(x: tabRouter.settingsOffset(screenWidth: geometry.size.width))
+                            .zIndex(tabRouter.isSettingsActive ? 2 : 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(

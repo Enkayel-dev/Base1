@@ -224,6 +224,36 @@ public struct AnimatedMeshBackground: View {
                     Color(red: 0.35, green: 0.20, blue: 0.40),
                 ]
             }
+        case .teal: // #008080
+            if isLight {
+                return [
+                    Color(red: 0.85, green: 0.95, blue: 0.95),
+                    Color(red: 0.60, green: 0.90, blue: 0.90),
+                    Color(red: 0.40, green: 0.80, blue: 0.80),
+                    
+                    Color(red: 0.90, green: 0.98, blue: 0.98),
+                    Color(red: 0.70, green: 0.92, blue: 0.92),
+                    Color(red: 0.50, green: 0.85, blue: 0.85),
+                    
+                    Color(red: 0.95, green: 1.0, blue: 1.0),
+                    Color(red: 0.80, green: 0.95, blue: 0.95),
+                    Color(red: 0.60, green: 0.88, blue: 0.88),
+                ]
+            } else {
+                return [
+                    Color(red: 0.0, green: 0.4, blue: 0.4),
+                    Color(red: 0.0, green: 0.6, blue: 0.6),
+                    Color(red: 0.0, green: 0.3, blue: 0.3),
+                    
+                    Color(red: 0.2, green: 0.7, blue: 0.7),
+                    Color(red: 0.1, green: 0.5, blue: 0.5),
+                    Color(red: 0.0, green: 0.4, blue: 0.4),
+                    
+                    Color(red: 0.4, green: 0.8, blue: 0.8),
+                    Color(red: 0.1, green: 0.6, blue: 0.6),
+                    Color(red: 0.0, green: 0.3, blue: 0.3),
+                ]
+            }
         }
     }
 }
