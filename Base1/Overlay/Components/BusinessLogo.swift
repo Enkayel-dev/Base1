@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct BusinessLogo: View {
+    var isActive: Bool = false
     var action: () -> Void = {}
     
     var body: some View {
@@ -17,11 +18,16 @@ struct BusinessLogo: View {
                 Button(action: action) {
                     Image(systemName: "person.fill")
                         .font(.title3)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(isActive ? .white : .primary)
                         .frame(
                             width: DesignConstants.Settings.buttonSize,
                             height: DesignConstants.Settings.buttonSize
                         )
+                        .background {
+                            if isActive {
+                                Circle().fill(.blue.gradient)
+                            }
+                        }
                 }
                 .glassEffect(.regular.interactive(), in: .circle)
                 .padding(.leading, 20)

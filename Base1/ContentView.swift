@@ -29,6 +29,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Workflow.self], inMemory: true)
+        .modelContainer(SampleDataContainer.preview)
 }
 

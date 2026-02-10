@@ -9,18 +9,48 @@ struct Base1App: App {
     @State private var tabRouter = TabRouter()
     @State private var searchState = SearchState()
     @State private var workflowService = WorkflowService()
-    
+    @State private var businessService = BusinessService()
+
     private let backgroundService = BackgroundService()
-    
+
+    let modelContainer: ModelContainer
+    let businessContext: BusinessContext   // ← ADD THIS
+
+    init() {
+        let schema = Schema(Base1SchemaV1.models)
+        let config = ModelConfiguration()
+
+        do {
+            modelContainer = try ModelContainer(
+                for: schema,
+                migrationPlan: Base1MigrationPlan.self,
+                configurations: [config]
+            )
+        } catch {
+            print("ModelContainer failed: \(error). Deleting store and retrying.")
+            let storeURL = config.url
+            let related = [storeURL, storeURL.appendingPathExtension("wal"), storeURL.appendingPathExtension("shm")]
+            for url in related { try? FileManager.default.removeItem(at: url) }
+            modelContainer = try! ModelContainer(
+                for: schema,
+                migrationPlan: Base1MigrationPlan.self,
+                configurations: [config]
+            )
+        }
+
+        // Initialize BusinessContext AFTER ModelContainer
+        businessContext = BusinessContext(container: modelContainer)
+    }
+
     var body: some Scene {
         WindowGroup {
             MainTabView(backgroundService: backgroundService)
-                // Inject shared state into the environment
                 .environment(backgroundState)
                 .environment(tabRouter)
                 .environment(searchState)
                 .environment(workflowService)
+                .environment(businessContext)   // ← INJECT BUSINESS CONTEXT
         }
-        .modelContainer(for: [Workflow.self, WorkflowStep.self])
+        .modelContainer(modelContainer)
     }
 }

@@ -58,14 +58,14 @@ struct LiquidGlassFilterPicker: View {
 
 enum FilterOption: String, CaseIterable, Identifiable {
     case all = "All"
-    case active = "Lead"
-    case pending = "Active"
-    case completed = "Closed"
-    
+    case lead = "Lead"
+    case active = "Active"
+    case closed = "Closed"
+
     var id: String { rawValue }
-    
     var title: String { rawValue }
 }
+
 
 // MARK: - Preview
 

@@ -13,11 +13,11 @@ struct CustomBottomTabBar: View {
     @Namespace private var glassNS
     
     private let tabs: [TabItem] = [
-        TabItem(index: 0, label: "Clients", icon: "house.fill"),
-        TabItem(index: 1, label: "Schedule", icon: "square.grid.2x2.fill"),
-        TabItem(index: 2, label: "Projects", icon: "play.square.stack.fill"),
-        TabItem(index: 3, label: "Resources", icon: "play.square.stack.fill"),
-        TabItem(index: 4, label: "Finances", icon: "play.square.stack.fill"),
+        TabItem(index: 0, label: "Clients", icon: "person.2.fill"),
+        TabItem(index: 1, label: "Schedule", icon: "calendar"),
+        TabItem(index: 2, label: "Projects", icon: "folder.fill"),
+        TabItem(index: 3, label: "Resources", icon: "cube.box.fill"),
+        TabItem(index: 4, label: "Finances", icon: "banknote.fill"),
     ]
     
     var body: some View {
@@ -47,12 +47,13 @@ struct CustomBottomTabBar: View {
             searchState.dismiss()
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: tab.icon)
-                    .font(.body)
                 if isSelected {
                     Text(tab.label)
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                } else {
+                    Image(systemName: tab.icon)
+                        .font(.body)
                 }
             }
             .foregroundStyle(isSelected ? .white : .primary)

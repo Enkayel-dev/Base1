@@ -26,7 +26,7 @@ struct MainTabView: View {
             TabContentView()
             
             if !tabRouter.isSettingsActive {
-                BusinessLogo {
+                BusinessLogo(isActive: tabRouter.isBusinessProfileActive) {
                     withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
                         tabRouter.isBusinessProfileActive.toggle()
                     }
@@ -34,7 +34,7 @@ struct MainTabView: View {
             }
             
             if !tabRouter.isBusinessProfileActive {
-                SettingsButton {
+                SettingsButton(isActive: tabRouter.isSettingsActive) {
                     withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
                         tabRouter.isSettingsActive.toggle()
                     }
@@ -69,10 +69,12 @@ struct MainTabView: View {
         }
                     .onAppear {
                         workflowService.setContext(modelContext)
-                        
-                        // Start placeholder workflow for testing
-                        workflowService.startWorkflow(.testWorkflow)
-                        
+
+                        // Start a test workflow from template for development
+                        let template = WorkflowTemplate.sampleNewLeadTemplate
+                        modelContext.insert(template)
+                        workflowService.startWorkflow(from: template)
+
                         withAnimation(.easeInOut(duration: 0.6)) {
                             backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
                         }
