@@ -46,6 +46,8 @@ struct Tab4View: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .center)
+                
+            Spacer()
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 categoryCard(

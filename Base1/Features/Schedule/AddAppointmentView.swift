@@ -16,7 +16,8 @@ struct AddAppointmentView: View {
 
     // MARK: - Form Fields
 
-    @State private var title = ""
+    @State private var selectedClient: Client?
+    @State private var selectedProject: Project?
     @State private var appointmentType: AppointmentType = .meeting
     @State private var notes = ""
 
@@ -25,9 +26,6 @@ struct AddAppointmentView: View {
     @State private var isAllDay = false
 
     @State private var location = ""
-
-    @State private var selectedClient: Client?
-    @State private var selectedProject: Project?
 
     @State private var reminderMinutes: ReminderOption = .none
 
@@ -39,6 +37,15 @@ struct AddAppointmentView: View {
     @Query(sort: \Project.title)
     private var allProjects: [Project]
 
+    private var autoTitle: String {
+        guard let client = selectedClient else { return "" }
+        return "\(appointmentType.displayTitle) with \(client.lastName)"
+    }
+
+    private var canSave: Bool {
+        selectedClient != nil
+    }
+
     private var availableProjects: [Project] {
         guard let client = selectedClient else { return [] }
         return allProjects.filter { $0.client?.persistentModelID == client.persistentModelID }
@@ -49,10 +56,13 @@ struct AddAppointmentView: View {
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        detailsSection
+                        clientSection
+                        typeSection
+                        titlePreview
                         dateTimeSection
                         locationSection
-                        linkSection
+                        notesSection
+                        projectLinkSection
                         reminderSection
                     }
                     .padding(.horizontal)
@@ -67,20 +77,41 @@ struct AddAppointmentView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { saveAppointment() }
-                        .disabled(title.isEmpty)
+                        .disabled(!canSave)
                 }
             }
         }
     }
 
-    // MARK: - Details Section
+    // MARK: - Client Section
 
-    private var detailsSection: some View {
+    private var clientSection: some View {
         sectionCard {
-            LabeledTextField("Title", text: $title, icon: "pencil")
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Client", systemImage: "person")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Client", selection: $selectedClient) {
+                    Text("Select a client…").tag(Client?.none)
+                    ForEach(allClients) { client in
+                        Text(client.displayName).tag(Client?.some(client))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+        }
+        .onChange(of: selectedClient) { _, client in
+            if let client = client, let address = client.address, location.isEmpty {
+                location = address
+            }
+            selectedProject = nil
+        }
+    }
 
-            Divider()
+    // MARK: - Type Section
 
+    private var typeSection: some View {
+        sectionCard {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Type", systemImage: "tag")
                     .font(.caption)
@@ -93,16 +124,22 @@ struct AddAppointmentView: View {
                 }
                 .pickerStyle(.menu)
             }
+        }
+    }
 
-            Divider()
+    // MARK: - Title Preview
 
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Notes", systemImage: "note.text")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextEditor(text: $notes)
-                    .frame(minHeight: 60)
-                    .scrollContentBackground(.hidden)
+    @ViewBuilder
+    private var titlePreview: some View {
+        if canSave {
+            sectionCard {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Appointment Title", systemImage: "text.quote")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(autoTitle)
+                        .font(.headline)
+                }
             }
         }
     }
@@ -145,26 +182,27 @@ struct AddAppointmentView: View {
         }
     }
 
-    // MARK: - Link Section
+    // MARK: - Notes Section
 
-    private var linkSection: some View {
+    private var notesSection: some View {
         sectionCard {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Client", systemImage: "person")
+                Label("Notes", systemImage: "note.text")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker("Client", selection: $selectedClient) {
-                    Text("None").tag(Client?.none)
-                    ForEach(allClients) { client in
-                        Text(client.displayName).tag(Client?.some(client))
-                    }
-                }
-                .pickerStyle(.menu)
+                TextEditor(text: $notes)
+                    .frame(minHeight: 60)
+                    .scrollContentBackground(.hidden)
             }
+        }
+    }
 
-            if selectedClient != nil && !availableProjects.isEmpty {
-                Divider()
+    // MARK: - Project Link Section
 
+    @ViewBuilder
+    private var projectLinkSection: some View {
+        if selectedClient != nil && !availableProjects.isEmpty {
+            sectionCard {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Project", systemImage: "folder")
                         .font(.caption)
@@ -178,9 +216,6 @@ struct AddAppointmentView: View {
                     .pickerStyle(.menu)
                 }
             }
-        }
-        .onChange(of: selectedClient) { _, _ in
-            selectedProject = nil
         }
     }
 
@@ -220,7 +255,7 @@ struct AddAppointmentView: View {
 
         let appointment = Appointment(
             businessKey: businessKey,
-            title: title,
+            title: autoTitle,
             description: notes.isEmpty ? nil : notes,
             type: appointmentType,
             startDate: startDate,
