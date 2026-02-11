@@ -229,14 +229,14 @@ Workflow 1──* WorkflowStep
 #### Feature Views
 | File | Type | Feature | Purpose |
 |------|------|---------|---------|
-| `Features/Clients/ClientsView.swift` | `ClientsView` | Clients | Client list with filter picker + add client sheet |
+| `Features/Clients/Tab1View.swift` | `Tab1View` | Clients | Client list with filter picker + add client sheet |
 | `Features/Clients/AddClientView.swift` | `AddClientView` | Clients | Add client form |
 | `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
-| `Features/Schedule/ScheduleView.swift` | `ScheduleView` | Schedule | Schedule tab (placeholder) |
-| `Features/Projects/ProjectsView.swift` | `ProjectsView` | Projects | Projects tab (placeholder) |
-| `Features/Resources/ResourcesView.swift` | `ResourcesView` | Resources | Resources tab (placeholder) |
-| `Features/Finances/FinancesView.swift` | `FinancesView` | Finances | Finances tab (placeholder) |
+| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Schedule tab (placeholder) |
+| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Projects tab (placeholder) |
+| `Features/Resources/Tab4View.swift` | `Tab4View` | Resources | Resources tab (placeholder) |
+| `Features/Finances/Tab5View.swift` | `Tab5View` | Finances | Finances tab (placeholder) |
 | `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen (mock) |
 | `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo |
 
@@ -325,18 +325,18 @@ Base1/
     │       ├── BackgroundState.swift
     │       └── MeshScheme.swift
     ├── Clients/
-    │   ├── ClientsView.swift
+    │   ├── Tab1View.swift
     │   ├── AddClientView.swift
     │   ├── ClientRowView.swift
     │   └── EmptyClientsView.swift
     ├── Schedule/
-    │   └── ScheduleView.swift
+    │   └── Tab2View.swift
     ├── Projects/
-    │   └── ProjectsView.swift
+    │   └── Tab3View.swift
     ├── Resources/
-    │   └── ResourcesView.swift
+    │   └── Tab4View.swift
     ├── Finances/
-    │   └── FinancesView.swift
+    │   └── Tab5View.swift
     └── Settings/
         ├── SettingsView.swift
         └── BusinessProfile.swift
