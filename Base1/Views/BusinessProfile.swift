@@ -10,34 +10,36 @@ import SwiftData
 import Observation
 
 struct BusinessProfile: View {
-
+    
     // Use the new combined manager
     @Environment(BusinessManager.self) private var businessManager
-
+    
     // Computed property to get the current business
     private var business: Business? {
         businessManager.currentBusiness
     }
-
+    
     var body: some View {
         VStack(spacing: 20) {
-
+            
             Text("Business Profile")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .center)
             if let business {
-                List {
-                    Section("Information") {
-                        Text("Name: \(business.name)")
-                        Text("Owner: \(business.ownerName)")
-                        Text("Business Key: \(business.businessKey)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                        Text("Apple ID: \(business.ownerAppleUserID)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Group {
+                            Text("Name: \(business.name)")
+                            Text("Owner: \(business.ownerName)")
+                            Text("Business Key: \(business.businessKey)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            Text("Apple ID: \(business.ownerAppleUserID)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                         if let email = business.email {
                             Text("Email: \(email)")
                         }
@@ -48,15 +50,9 @@ struct BusinessProfile: View {
                             Text("Address: \(address)")
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .scrollContentBackground(.hidden)
-            } else {
-                Text("No Business Loaded")
-                    .foregroundStyle(.secondary)
             }
-
-            Spacer()
         }
-        .padding()
     }
 }
