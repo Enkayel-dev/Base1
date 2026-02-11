@@ -15,12 +15,13 @@ struct DayTimelineView: View {
     // MARK: - Constants
 
     private let hourHeight: CGFloat = 60
-    private let startHour: Int = 6
-    private let endHour: Int = 22
+    private let startHour: Int = 0    // 12:00 AM
+    private let endHour: Int = 24     // 11:59 PM
     private let gutterWidth: CGFloat = 50
 
     private var totalHours: Int { endHour - startHour }
     private var totalHeight: CGFloat { CGFloat(totalHours) * hourHeight }
+
 
     // MARK: - Body
 
@@ -28,37 +29,54 @@ struct DayTimelineView: View {
         GeometryReader { geo in
             let eventWidth = geo.size.width - gutterWidth - 8
 
-            ScrollView {
-                ZStack(alignment: .topLeading) {
-                    // Hour grid
-                    hourGrid
+            ScrollViewReader { proxy in
+                ScrollView {
+                    ZStack(alignment: .topLeading) {
+                        // Hour grid
+                        hourGrid
 
-                    // Event blocks
-                    let layouts = layoutEvents(availableWidth: eventWidth)
-                    ForEach(layouts, id: \.appointment.id) { item in
-                        eventBlock(item: item)
-                            .offset(
-                                x: gutterWidth + 4 + item.xOffset,
-                                y: yPosition(for: item.appointment.startDate)
-                            )
-                    }
+                        // Event blocks
+                        let layouts = layoutEvents(availableWidth: eventWidth)
+                        ForEach(layouts, id: \.appointment.id) { item in
+                            eventBlock(item: item)
+                                .offset(
+                                    x: gutterWidth + 4 + item.xOffset,
+                                    y: yPosition(for: item.appointment.startDate)
+                                )
+                        }
 
-                    // Now indicator
-                    if isToday {
-                        nowIndicator
+                        // Now indicator
+                        if isToday {
+                            nowIndicator
+                        }
+
+                        // Scroll anchor - use layout position instead of offset for reliable proxy scrolling
+                        let anchorY = isToday ? yPosition(for: .now) : yPosition(forHour: 10)
+                        Color.clear
+                            .frame(width: 1, height: 1)
+                            .id("nowAnchor")
+                            .position(x: 0, y: anchorY)
                     }
+                    .frame(height: totalHeight)
+                    .padding(.bottom, 100)
                 }
-                .frame(height: totalHeight)
-                .padding(.bottom, 120)
+                .onAppear {
+                    // Scroll to current time or morning start, using .top anchor to avoid empty space at 12am
+                    proxy.scrollTo("nowAnchor", anchor: .top)
+                }
             }
         }
+    }
+
+    private func yPosition(forHour hour: Int) -> CGFloat {
+        CGFloat(hour - startHour) * hourHeight
     }
 
     // MARK: - Hour Grid
 
     private var hourGrid: some View {
         ZStack(alignment: .topLeading) {
-            ForEach(0..<totalHours, id: \.self) { i in
+            ForEach(0...totalHours, id: \.self) { i in
                 let hour = startHour + i
                 let y = CGFloat(i) * hourHeight
 

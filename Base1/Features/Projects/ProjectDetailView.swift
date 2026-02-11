@@ -11,7 +11,7 @@ import SwiftData
 struct ProjectDetailView: View {
     let project: Project
 
-    @State private var showingAddScopeItem = false
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     var body: some View {
         NavigationStack {
@@ -27,9 +27,6 @@ struct ProjectDetailView: View {
             }
             .navigationTitle(project.title)
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingAddScopeItem) {
-                AddScopeItemView(project: project)
-            }
         }
     }
 
@@ -108,7 +105,7 @@ struct ProjectDetailView: View {
                 Spacer()
 
                 Button {
-                    showingAddScopeItem = true
+                    drawerRouter.present(.addScopeItem(project))
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundStyle(.blue)

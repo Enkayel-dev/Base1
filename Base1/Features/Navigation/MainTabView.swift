@@ -12,19 +12,34 @@ import SwiftData
 struct MainTabView: View {
         @Environment(BackgroundState.self) private var backgroundState
         @Environment(TabRouter.self) private var tabRouter
+        @Environment(DrawerRouter.self) private var drawerRouter
         @Environment(SearchState.self) private var searchState
         @Environment(WorkflowService.self) private var workflowService
         @Environment(\.modelContext) private var modelContext
-        
+
         let backgroundService: BackgroundService
-    
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            
+
             AnimatedMeshBackground(scheme: backgroundState.scheme)
-            
+
             TabContentView()
-            
+
+            // MARK: - Drawer Overlay
+
+            if drawerRouter.isPresented {
+                SideDrawer(onDismiss: {
+                    drawerRouter.dismiss()
+                }) {
+                    if let destination = drawerRouter.currentDrawer {
+                        DrawerViewFactory.view(for: destination)
+                    }
+                }
+                .transition(.move(edge: .trailing))
+                .zIndex(100)
+            }
+
             if !tabRouter.isSettingsActive {
                 BusinessLogo(isActive: tabRouter.isBusinessProfileActive) {
                     withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
@@ -32,7 +47,7 @@ struct MainTabView: View {
                     }
                 }
             }
-            
+
             if !tabRouter.isBusinessProfileActive {
                 SettingsButton(isActive: tabRouter.isSettingsActive) {
                     withAnimation(.spring(response: DesignConstants.Animation.quickResponse)) {
@@ -42,6 +57,10 @@ struct MainTabView: View {
             }
 
         }
+        .animation(.spring(
+            response: DesignConstants.Animation.morphResponse,
+            dampingFraction: DesignConstants.Animation.morphDamping
+        ), value: drawerRouter.isPresented)
         .onChange(of: tabRouter.selectedTab) { _, newIndex in
             withAnimation(.easeInOut(duration: 0.6)) {
                 if !tabRouter.isSettingsActive && !tabRouter.isBusinessProfileActive {
@@ -81,39 +100,39 @@ struct MainTabView: View {
                     }
                 }
     // MARK: - Tab Content
-    
+
     /// Manages the tab page switching and bottom bar inset.
     private struct TabContentView: View {
             @Environment(TabRouter.self) private var tabRouter
-            
+
             var body: some View {
                 GeometryReader { geometry in
                     ZStack {
                         BusinessProfile()
                             .offset(x: tabRouter.businessProfileOffset(screenWidth: geometry.size.width))
                             .zIndex(tabRouter.isBusinessProfileActive ? 2 : 0)
-                            
+
                         // Tab 1
                         Tab1View()
                             .offset(x: tabRouter.offsetForTab(0, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 0 ? 1 : 0)
-                        
+
                         Tab2View()
                             .offset(x: tabRouter.offsetForTab(1, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 1 ? 1 : 0)
-                        
+
                         Tab3View()
                             .offset(x: tabRouter.offsetForTab(2, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 2 ? 1 : 0)
-                        
+
                         Tab4View()
                             .offset(x: tabRouter.offsetForTab(3, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 3 ? 1 : 0)
-                        
+
                         Tab5View()
                             .offset(x: tabRouter.offsetForTab(4, screenWidth: geometry.size.width))
                             .zIndex(tabRouter.selectedTab == 4 ? 1 : 0)
-                            
+
                         SettingsView()
                             .offset(x: tabRouter.settingsOffset(screenWidth: geometry.size.width))
                             .zIndex(tabRouter.isSettingsActive ? 2 : 0)
@@ -138,6 +157,7 @@ struct MainTabView: View {
         MainTabView(backgroundService: BackgroundService())
             .environment(BackgroundState())
             .environment(TabRouter())
+            .environment(DrawerRouter())
             .environment(SearchState())
             .environment(WorkflowService())
             .preferredColorScheme(.dark)

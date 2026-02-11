@@ -10,9 +10,9 @@ import SwiftData
 
 struct Tab3View: View {
     @State private var selectedFilter: ProjectFilterOption = .all
-    @State private var showingAddProject = false
 
     @Environment(BusinessManager.self) private var businessManager
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     @Query(sort: \Project.createdAt, order: .reverse)
     private var allProjects: [Project]
@@ -51,7 +51,7 @@ struct Tab3View: View {
                     .foregroundStyle(.white)
 
                 Button {
-                    showingAddProject = true
+                    drawerRouter.present(.addProject)
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.title2)
@@ -78,9 +78,6 @@ struct Tab3View: View {
             }
 
             Spacer()
-        }
-        .sheet(isPresented: $showingAddProject) {
-            AddProjectView()
         }
     }
 }

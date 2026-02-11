@@ -10,7 +10,7 @@ import SwiftUI
 struct ProjectRowView: View {
     let project: Project
 
-    @State private var showingDetail = false
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     private var dateRangeText: String? {
         let formatter = DateFormatter()
@@ -72,10 +72,7 @@ struct ProjectRowView: View {
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onTapGesture { showingDetail = true }
-        .sheet(isPresented: $showingDetail) {
-            ProjectDetailView(project: project)
-        }
+        .onTapGesture { drawerRouter.present(.projectDetail(project)) }
     }
 
     // MARK: - Colors

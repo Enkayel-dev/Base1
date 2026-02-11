@@ -11,7 +11,7 @@ import SwiftData
 struct Tab2View: View {
 
     @Environment(BusinessManager.self) private var businessManager
-    @State private var isAddPresented = false
+    @Environment(DrawerRouter.self) private var drawerRouter
     @State private var selectedDate = Date.now
 
     @Query(sort: \Appointment.startDate)
@@ -61,9 +61,6 @@ struct Tab2View: View {
                 )
             }
         }
-        .sheet(isPresented: $isAddPresented) {
-            AddAppointmentView()
-        }
     }
 
     // MARK: - Header
@@ -76,7 +73,7 @@ struct Tab2View: View {
                 .foregroundStyle(.white)
 
             Button {
-                isAddPresented = true
+                drawerRouter.present(.addAppointment)
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
@@ -84,7 +81,6 @@ struct Tab2View: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical)
     }
 
     // MARK: - Date Selector

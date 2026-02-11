@@ -11,11 +11,9 @@ import SwiftData
 struct JobTypeListView: View {
 
     @Environment(BusinessManager.self) private var businessManager
+    @Environment(DrawerRouter.self) private var drawerRouter
     @Query(sort: \JobType.sortOrder)
     private var allJobTypes: [JobType]
-
-    @State private var showingAddJobType = false
-    @State private var selectedJobType: JobType?
 
     private var businessJobTypes: [JobType] {
         guard let key = businessManager.businessKey else { return [] }
@@ -43,7 +41,7 @@ struct JobTypeListView: View {
                     } else {
                         ForEach(businessJobTypes) { jobType in
                             Button {
-                                selectedJobType = jobType
+                                drawerRouter.present(.jobTypeDetail(jobType))
                             } label: {
                                 HStack(spacing: 12) {
                                     Image(systemName: jobType.icon)
@@ -83,17 +81,11 @@ struct JobTypeListView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        showingAddJobType = true
+                        drawerRouter.present(.addJobType)
                     } label: {
                         Image(systemName: "plus.circle.fill")
                     }
                 }
-            }
-            .sheet(isPresented: $showingAddJobType) {
-                AddJobTypeView()
-            }
-            .sheet(item: $selectedJobType) { jobType in
-                JobTypeDetailView(jobType: jobType)
             }
         }
     }

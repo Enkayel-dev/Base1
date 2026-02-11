@@ -10,17 +10,8 @@ import SwiftData
 
 struct Tab4View: View {
 
-    @State private var showingAddEquipment = false
-    @State private var showingAddMaterial = false
-    @State private var showingAddVehicle = false
-    @State private var showingAddTool = false
-
-    @State private var showingEquipmentList = false
-    @State private var showingMaterialList = false
-    @State private var showingVehicleList = false
-    @State private var showingToolList = false
-
     @Environment(BusinessManager.self) private var businessManager
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     @Query(sort: \Resource.name)
     private var allResources: [Resource]
@@ -46,7 +37,7 @@ struct Tab4View: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .center)
-                
+
             Spacer()
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
@@ -55,8 +46,8 @@ struct Tab4View: View {
                     icon: "gearshape.2",
                     color: .blue,
                     count: count(for: .equipment),
-                    onAdd: { showingAddEquipment = true },
-                    onOpen: { showingEquipmentList = true }
+                    onAdd: { drawerRouter.present(.addEquipment) },
+                    onOpen: { drawerRouter.present(.equipmentList) }
                 )
 
                 categoryCard(
@@ -64,8 +55,8 @@ struct Tab4View: View {
                     icon: "shippingbox",
                     color: .green,
                     count: count(for: .material),
-                    onAdd: { showingAddMaterial = true },
-                    onOpen: { showingMaterialList = true }
+                    onAdd: { drawerRouter.present(.addMaterial) },
+                    onOpen: { drawerRouter.present(.materialList) }
                 )
 
                 categoryCard(
@@ -73,8 +64,8 @@ struct Tab4View: View {
                     icon: "car",
                     color: .purple,
                     count: count(for: .vehicle),
-                    onAdd: { showingAddVehicle = true },
-                    onOpen: { showingVehicleList = true }
+                    onAdd: { drawerRouter.present(.addVehicle) },
+                    onOpen: { drawerRouter.present(.vehicleList) }
                 )
 
                 categoryCard(
@@ -82,22 +73,14 @@ struct Tab4View: View {
                     icon: "wrench.and.screwdriver",
                     color: .orange,
                     count: count(for: .tool),
-                    onAdd: { showingAddTool = true },
-                    onOpen: { showingToolList = true }
+                    onAdd: { drawerRouter.present(.addTool) },
+                    onOpen: { drawerRouter.present(.toolList) }
                 )
             }
             .padding(.horizontal)
 
             Spacer()
         }
-        .sheet(isPresented: $showingAddEquipment) { AddEquipmentView() }
-        .sheet(isPresented: $showingAddMaterial) { AddMaterialView() }
-        .sheet(isPresented: $showingAddVehicle) { AddVehicleView() }
-        .sheet(isPresented: $showingAddTool) { AddToolView() }
-        .sheet(isPresented: $showingEquipmentList) { ResourceListSheet(category: .equipment) }
-        .sheet(isPresented: $showingMaterialList) { ResourceListSheet(category: .material) }
-        .sheet(isPresented: $showingVehicleList) { ResourceListSheet(category: .vehicle) }
-        .sheet(isPresented: $showingToolList) { ResourceListSheet(category: .tool) }
     }
 
     // MARK: - Category Card
@@ -156,7 +139,7 @@ struct ResourceListSheet: View {
     let category: ResourceCategory
 
     @Environment(BusinessManager.self) private var businessManager
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissDrawer) private var dismiss
 
     @Query(sort: \Resource.name)
     private var allResources: [Resource]

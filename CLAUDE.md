@@ -93,14 +93,14 @@ Files are grouped by **feature** (Clients, Workflow, Settings, etc.) rather than
 
 ```
 Features/
-├── Clients/          ← Tab1View, AddClientView, ClientRowView, EmptyClientsView
+├── Clients/          ← Tab1View, AddClientView, ClientRowView, ClientDetailView, EmptyClientsView
 ├── Schedule/         ← Tab2View, AddAppointmentView, AppointmentRowView, EmptyScheduleView
 ├── Projects/         ← Tab3View, AddProjectView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView
 ├── Resources/        ← Tab4View, AddEquipmentView, AddMaterialView, AddVehicleView, AddToolView, ResourceRowView, EmptyResourcesView
 ├── Finances/         ← Tab5View (placeholder)
 ├── Workflow/         ← WorkflowModels, WorkflowService, WorkflowMiniCard, WorkflowViewFactory (stub)
 ├── Background/       ← AnimatedMeshBackground, MeshScheme, BackgroundState, BackgroundService, BackgroundCoordinator (unused)
-├── Navigation/       ← MainTabView, TabRouter, BottomBarView, CustomBottomTabBar, SearchBar, SearchState, BusinessLogo, SettingsButton
+├── Navigation/       ← MainTabView, TabRouter, DrawerRouter, DrawerViewFactory, BottomBarView, CustomBottomTabBar, SearchBar, SearchState, BusinessLogo, SettingsButton
 └── Settings/         ← SettingsView, BusinessProfile, MemberRowView, InviteMemberView, JobTypeListView, AddJobTypeView, JobTypeDetailView, AddScopeItemTemplateView
 ```
 
@@ -117,6 +117,7 @@ struct Base1App: App {
             MainTabView(backgroundService: BackgroundService())
                 .environment(businessManager)
                 .environment(tabRouter)
+                .environment(drawerRouter)
                 .environment(searchState)
                 .environment(workflowService)
                 .environment(backgroundState)
@@ -165,6 +166,30 @@ enum DesignConstants {
     }
 }
 ```
+
+#### Pattern: DrawerRouter (Centralized Modal Presentation)
+
+All modal content uses a centralized `DrawerRouter` (@Observable service) instead of `.sheet()`. The `SideDrawer` component slides from the right, occupies the center 1/3 of screen height, and uses `.ultraThinMaterial`. Drawers render as an overlay on `MainTabView` — outside the offset-based tab ZStack — so they always cover the full screen regardless of tab position.
+
+**DrawerRouter** manages a stack of `DrawerDestination` enum values. Views call `drawerRouter.present(.destination)` to open drawers. The stack supports nesting (drawer opens another drawer). `DrawerViewFactory` maps enum cases to SwiftUI views.
+
+```swift
+// Feature view — present a drawer via the router
+@Environment(DrawerRouter.self) private var drawerRouter
+
+Button { drawerRouter.present(.addClient) }
+
+// Item-based — pass model as associated value
+.onTapGesture { drawerRouter.present(.clientDetail(client)) }
+
+// Content view — dismiss via environment action (unchanged)
+@Environment(\.dismissDrawer) private var dismiss
+```
+
+**Why centralized, not per-view:**
+- Tab views use offset-based transitions; `.overlay`-based drawers would shift with the tab content
+- Nested drawers (e.g., JobTypeList > JobTypeDetail > AddScopeItemTemplate) need full-screen rendering
+- Single point of control for all drawer animations, z-ordering, and lifecycle
 
 #### Pattern: Multi-Tenancy via `businessKey`
 
@@ -225,8 +250,10 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 #### Navigation & Chrome (`Features/Navigation/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `MainTabView.swift` | `MainTabView` | Root view — ZStack with background, tab content, nav buttons |
+| `MainTabView.swift` | `MainTabView` | Root view — ZStack with background, tab content, drawer overlay, nav buttons |
 | `Components/TabRouter.swift` | `TabRouter` (@Observable) | Tab selection state, offset-based slide animations |
+| `Components/DrawerRouter.swift` | `DrawerRouter` (@Observable), `DrawerDestination` | Centralized drawer presentation — stack-based, supports nesting. All views call `drawerRouter.present(.destination)` |
+| `Components/DrawerViewFactory.swift` | `DrawerViewFactory` | Maps `DrawerDestination` enum cases to SwiftUI content views |
 | `Components/BottomBarView.swift` | `BottomBarView` | Bottom bar container (search bar, workflow card, tab bar) |
 | `Components/CustomBottomTabBar.swift` | `CustomBottomTabBar` | 5-tab bar with matched geometry selection indicator |
 | `Components/SearchBar.swift` | `SearchBar` | Search input with auto-focus |
@@ -245,20 +272,21 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 #### Feature Views
 | File | Type | Feature | Purpose |
 |------|------|---------|---------|
-| `Features/Clients/Tab1View.swift` | `Tab1View` | Clients | Client list with filter picker + add client sheet |
+| `Features/Clients/Tab1View.swift` | `Tab1View` | Clients | Client list with filter picker + add client side drawer |
 | `Features/Clients/AddClientView.swift` | `AddClientView` | Clients | Add client form |
 | `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
+| `Features/Clients/ClientDetailView.swift` | `ClientDetailView` | Clients | Client detail drawer — contact info, linked projects, appointments |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
-| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment sheet |
+| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer |
 | `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, positioned event blocks, overlap layout, now-line |
 | `Features/Schedule/AddAppointmentView.swift` | `AddAppointmentView` | Schedule | Add appointment form — type, date/time, all-day, location, client/project linking, reminders |
 | `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
 | `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
-| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project sheet |
+| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project side drawer |
 | `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template |
 | `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — status badge, job type label, client name, date range, overdue indicator |
 | `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
-| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail sheet — header, assigned team section, scope items list, summary cards (cost, labor, inventory warnings) |
+| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, assigned team section, scope items list, summary cards (cost, labor, inventory warnings) |
 | `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker, quantity, labor hours, cost markup, live cost estimate, status |
 | `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icon, quantity, cost, status badge, inventory shortfall warning |
 | `Features/Resources/Tab4View.swift` | `Tab4View`, `ResourceListSheet` | Resources | 2x2 category grid (Equipment/Materials/Vehicles/Tools) — each card has Add and Open buttons. ResourceListSheet shows filtered list per category |
@@ -272,7 +300,7 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen (mock) |
 | `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo, team management section, job types & templates link |
 | `Features/Settings/MemberRowView.swift` | `MemberRowView` | Settings | Team member list row — avatar initials, name, email, role badge, invite status |
-| `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form sheet — email, display name, role picker (admin/member) |
+| `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form side drawer — email, display name, role picker (admin/member) |
 | `Features/Settings/JobTypeListView.swift` | `JobTypeListView` | Settings | Job type list — manage job types and their scope item templates |
 | `Features/Settings/AddJobTypeView.swift` | `AddJobTypeView` | Settings | Add job type form — name, icon picker |
 | `Features/Settings/JobTypeDetailView.swift` | `JobTypeDetailView` | Settings | Job type detail — shows scope item templates, add new ones |
@@ -284,6 +312,7 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `LabeledTextField.swift` | `LabeledTextField` | Shared labeled text field with icon + keyboard type |
 | `BindingExtensions.swift` | `Binding<String?>.orEmpty` | Optional string binding helper |
 | `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control — reusable across any feature with a `Filterable` enum |
+| `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Used by `MainTabView` to render content from `DrawerRouter`. Content views use `@Environment(\.dismissDrawer)` to dismiss |
 
 #### Design System (`Shared/Design/`)
 | File | Type | Purpose |
@@ -343,7 +372,8 @@ Base1/
 │       └── Components/
 │           ├── LabeledTextField.swift
 │           ├── BindingExtensions.swift
-│           └── LiquidGlassFilterPicker.swift
+│           ├── LiquidGlassFilterPicker.swift
+│           └── SideDrawer.swift
 └── Features/
     ├── Navigation/
     │   ├── MainTabView.swift
@@ -351,6 +381,8 @@ Base1/
     │       ├── BottomBarView.swift
     │       ├── BusinessLogo.swift
     │       ├── CustomBottomTabBar.swift
+    │       ├── DrawerRouter.swift
+    │       ├── DrawerViewFactory.swift
     │       ├── SearchBar.swift
     │       ├── SearchState.swift
     │       ├── SettingsButton.swift
@@ -371,6 +403,7 @@ Base1/
     │   ├── Tab1View.swift
     │   ├── AddClientView.swift
     │   ├── ClientRowView.swift
+    │   ├── ClientDetailView.swift
     │   └── EmptyClientsView.swift
     ├── Schedule/
     │   ├── Tab2View.swift

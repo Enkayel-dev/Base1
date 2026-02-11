@@ -10,6 +10,8 @@ import SwiftUI
 struct ClientRowView: View {
     let client: Client
 
+    @Environment(DrawerRouter.self) private var drawerRouter
+
     private var hasOpenProject: Bool {
         client.projects.contains { $0.status == .inProgress || $0.status == .planning }
     }
@@ -58,6 +60,7 @@ struct ClientRowView: View {
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onTapGesture { drawerRouter.present(.clientDetail(client)) }
     }
 
     // MARK: - Helpers

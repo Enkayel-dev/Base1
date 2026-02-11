@@ -13,7 +13,7 @@ struct AddClientView: View {
 
     @Environment(BusinessManager.self) private var businessManager
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissDrawer) private var dismiss
 
     @State private var selectedSource: ClientSource = .manual
 

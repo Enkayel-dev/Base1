@@ -11,9 +11,9 @@ import SwiftData
 struct Tab1View: View {
     @State private var selectedFilter: FilterOption = .all
     @State private var clientService = ClientService()
-    @State private var showingAddClient = false
 
     @Environment(BusinessManager.self) private var businessManager
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     @Query(sort: \Client.createdAt, order: .reverse)
     private var allClients: [Client]
@@ -28,7 +28,7 @@ struct Tab1View: View {
                     .foregroundStyle(.white)
 
                 Button {
-                    showingAddClient = true
+                    drawerRouter.present(.addClient)
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.title2)
@@ -59,9 +59,6 @@ struct Tab1View: View {
             }
 
             Spacer()
-        }
-        .sheet(isPresented: $showingAddClient) {
-            AddClientView()
         }
     }
 }

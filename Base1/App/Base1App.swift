@@ -10,6 +10,7 @@ struct Base1App: App {
     @State private var tabRouter = TabRouter()
     @State private var searchState = SearchState()
     @State private var workflowService = WorkflowService()
+    @State private var drawerRouter = DrawerRouter()
     @State private var businessManager: BusinessManager   // ← use manager directly
 
     private let backgroundService = BackgroundService()
@@ -50,6 +51,7 @@ struct Base1App: App {
                 .environment(tabRouter)
                 .environment(searchState)
                 .environment(workflowService)
+                .environment(drawerRouter)
                 .environment(businessManager)   // ← inject manager instead of context
         }
         .modelContainer(modelContainer)

@@ -10,7 +10,7 @@ import SwiftUI
 struct ResourceRowView: View {
     let resource: Resource
 
-    @State private var showingVariants = false
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     var body: some View {
         HStack(spacing: 12) {
@@ -57,11 +57,8 @@ struct ResourceRowView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if resource.isMaterialType {
-                showingVariants = true
+                drawerRouter.present(.materialVariants(resource))
             }
-        }
-        .sheet(isPresented: $showingVariants) {
-            MaterialVariantsSheet(materialType: resource)
         }
     }
 
@@ -197,7 +194,7 @@ struct ResourceRowView: View {
 struct MaterialVariantsSheet: View {
     let materialType: Resource
 
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismissDrawer) private var dismiss
 
     private var sortedVariants: [Resource] {
         materialType.materialVariants.sorted { $0.variantLabel ?? "" < $1.variantLabel ?? "" }

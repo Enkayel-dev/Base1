@@ -12,7 +12,7 @@ struct JobTypeDetailView: View {
 
     let jobType: JobType
 
-    @State private var showingAddTemplate = false
+    @Environment(DrawerRouter.self) private var drawerRouter
 
     var body: some View {
         NavigationStack {
@@ -46,7 +46,7 @@ struct JobTypeDetailView: View {
                             Spacer()
 
                             Button {
-                                showingAddTemplate = true
+                                drawerRouter.present(.addScopeItemTemplate(jobType))
                             } label: {
                                 Image(systemName: "plus.circle.fill")
                                     .foregroundStyle(.blue)
@@ -73,9 +73,6 @@ struct JobTypeDetailView: View {
             }
             .navigationTitle("Job Type")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingAddTemplate) {
-                AddScopeItemTemplateView(jobType: jobType)
-            }
         }
     }
 

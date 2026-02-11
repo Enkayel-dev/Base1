@@ -13,9 +13,8 @@ import UIKit
 struct BusinessProfile: View {
 
     @Environment(BusinessManager.self) private var businessManager
+    @Environment(DrawerRouter.self) private var drawerRouter
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var showingInviteMember = false
-    @State private var showingJobTypes = false
 
     private var business: Business? {
         businessManager.currentBusiness
@@ -77,9 +76,6 @@ struct BusinessProfile: View {
                 }
             }
         }
-        .sheet(isPresented: $showingInviteMember) {
-            InviteMemberView()
-        }
     }
 
     // MARK: - Team Section
@@ -98,7 +94,7 @@ struct BusinessProfile: View {
                 Spacer()
 
                 Button {
-                    showingInviteMember = true
+                    drawerRouter.present(.inviteMember)
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundStyle(.blue)
@@ -147,7 +143,7 @@ struct BusinessProfile: View {
 
     private var jobTypesSection: some View {
         Button {
-            showingJobTypes = true
+            drawerRouter.present(.jobTypeList)
         } label: {
             HStack {
                 Label("Job Types & Templates", systemImage: "wrench.and.screwdriver")
@@ -162,9 +158,6 @@ struct BusinessProfile: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .foregroundStyle(.primary)
-        .sheet(isPresented: $showingJobTypes) {
-            JobTypeListView()
-        }
     }
 
     // MARK: - Logo Section

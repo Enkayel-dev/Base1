@@ -44,6 +44,16 @@ enum DesignConstants {
         static let buttonSize: CGFloat = 44
     }
     
+    // MARK: - Drawer
+    enum Drawer {
+        static let leadingPadding: CGFloat = 10
+        static let cornerRadius: CGFloat = 16
+        /// Distance from safe area top to drawer top (clears BusinessLogo / SettingsButton)
+        static let topInset: CGFloat = Settings.buttonSize + 8
+        /// Distance from safe area bottom to drawer bottom (clears BottomBarView)
+        static let bottomInset: CGFloat = 190
+    }
+
     // MARK: - Animation
     enum Animation {
         static let tabSwitchResponse: Double = 0.35
