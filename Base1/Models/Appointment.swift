@@ -13,6 +13,7 @@ public final class Appointment {
 
     // MARK: - Fields
 
+    public var businessKey: String
     public var title: String
     public var appointmentDescription: String?
     public var typeRaw: String
@@ -55,6 +56,7 @@ public final class Appointment {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         title: String,
         description: String? = nil,
         type: AppointmentType = .meeting,
@@ -63,6 +65,7 @@ public final class Appointment {
         isAllDay: Bool = false,
         location: String? = nil
     ) {
+        self.businessKey = businessKey
         self.title = title
         self.appointmentDescription = description
         self.typeRaw = type.rawValue

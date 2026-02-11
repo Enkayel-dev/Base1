@@ -20,6 +20,7 @@ public final class Business {
     public var phone: String?
     public var address: String?
     public var notes: String?
+    public var taxNumber: String?
 
     @Attribute(.externalStorage)
     public var logoData: Data?

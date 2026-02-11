@@ -36,6 +36,7 @@ public final class WorkflowService {
         project: Project? = nil
     ) {
         let workflow = Workflow(
+            businessKey: template.businessKey,
             title: template.title,
             icon: template.icon,
             iconColor: template.iconColor

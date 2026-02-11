@@ -13,6 +13,8 @@ public final class Invoice {
 
     // MARK: - Fields
 
+    public var businessKey: String
+
     @Attribute(.unique)
     public var invoiceNumber: String
 
@@ -64,6 +66,7 @@ public final class Invoice {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         invoiceNumber: String,
         title: String,
         description: String? = nil,
@@ -73,6 +76,7 @@ public final class Invoice {
         issueDate: Date = .now,
         dueDate: Date
     ) {
+        self.businessKey = businessKey
         self.invoiceNumber = invoiceNumber
         self.title = title
         self.invoiceDescription = description

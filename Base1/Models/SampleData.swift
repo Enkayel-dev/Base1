@@ -13,8 +13,8 @@ import SwiftData
 extension Business {
     static var sample: Business {
         Business(
-            businessKey: "BUS_SAMPLE1",            // sample key
-            ownerAppleUserID: "SAMPLE_APPLE_USER", // sample Apple ID
+            businessKey: "BUS_SAMPLE1",
+            ownerAppleUserID: "SAMPLE_APPLE_USER",
             name: "Tremblay & Sons Construction",
             ownerName: "Nicholas Lachapelle",
             email: "info@tremcon.ca",
@@ -38,7 +38,6 @@ extension Client {
                 status: .active
             ),
             Client(
-                
                 businessKey: businessKey,
                 firstName: "Jean",
                 lastName: "Gagnon",
@@ -68,10 +67,11 @@ extension Client {
 // MARK: - Sample Projects
 
 extension Project {
-    static func sampleProjects(clients: [Client]) -> [Project] {
+    static func sampleProjects(businessKey: String, clients: [Client]) -> [Project] {
         guard clients.count >= 3 else { return [] }
 
         let p1 = Project(
+            businessKey: businessKey,
             title: "Kitchen Renovation",
             description: "Full kitchen remodel with custom cabinets",
             status: .inProgress,
@@ -82,6 +82,7 @@ extension Project {
         p1.client = clients[0]
 
         let p2 = Project(
+            businessKey: businessKey,
             title: "Office Buildout",
             description: "New office partition walls and electrical",
             status: .planning,
@@ -91,6 +92,7 @@ extension Project {
         p2.client = clients[0]
 
         let p3 = Project(
+            businessKey: businessKey,
             title: "Bathroom Tile Work",
             status: .inProgress,
             priority: .medium,
@@ -106,17 +108,18 @@ extension Project {
 // MARK: - Sample Resources
 
 extension Resource {
-    static var sampleResources: [Resource] {
+    static func sampleResources(businessKey: String) -> [Resource] {
         [
-            Resource(name: "Table Saw", category: .tool, quantity: 1),
+            Resource(businessKey: businessKey, name: "Table Saw", category: .tool, quantity: 1),
             Resource(
+                businessKey: businessKey,
                 name: "Ceramic Tile - White 12x12",
                 category: .material,
                 unitCost: 3.50,
                 quantity: 200,
                 unit: "sqft"
             ),
-            Resource(name: "Work Van #1", category: .vehicle, quantity: 1),
+            Resource(businessKey: businessKey, name: "Work Van #1", category: .vehicle, quantity: 1),
         ]
     }
 }
@@ -124,10 +127,11 @@ extension Resource {
 // MARK: - Sample Invoices
 
 extension Invoice {
-    static func sampleInvoices(clients: [Client], projects: [Project]) -> [Invoice] {
+    static func sampleInvoices(businessKey: String, clients: [Client], projects: [Project]) -> [Invoice] {
         guard clients.count >= 3, projects.count >= 3 else { return [] }
 
         let inv1 = Invoice(
+            businessKey: businessKey,
             invoiceNumber: "INV-2026-0001",
             title: "Kitchen Phase 1 - Demolition",
             amount: 4500.00,
@@ -138,6 +142,7 @@ extension Invoice {
         inv1.project = projects[0]
 
         let inv2 = Invoice(
+            businessKey: businessKey,
             invoiceNumber: "INV-2026-0002",
             title: "Tile Materials Deposit",
             amount: 1200.00,
@@ -154,12 +159,13 @@ extension Invoice {
 // MARK: - Sample Appointments
 
 extension Appointment {
-    static func sampleAppointments(clients: [Client], projects: [Project]) -> [Appointment] {
+    static func sampleAppointments(businessKey: String, clients: [Client], projects: [Project]) -> [Appointment] {
         guard clients.count >= 2, projects.count >= 1 else { return [] }
 
         let tomorrow = Calendar.current.startOfDay(for: .now.addingTimeInterval(86400))
 
         let a1 = Appointment(
+            businessKey: businessKey,
             title: "Kitchen Site Visit",
             type: .siteVisit,
             startDate: tomorrow.addingTimeInterval(9 * 3600),
@@ -170,6 +176,7 @@ extension Appointment {
         a1.project = projects[0]
 
         let a2 = Appointment(
+            businessKey: businessKey,
             title: "New Lead Consultation",
             type: .consultation,
             startDate: tomorrow.addingTimeInterval(14 * 3600),
@@ -184,8 +191,9 @@ extension Appointment {
 // MARK: - Sample Workflow Template
 
 extension WorkflowTemplate {
-    static var sampleNewLeadTemplate: WorkflowTemplate {
+    static func sampleNewLeadTemplate(businessKey: String) -> WorkflowTemplate {
         let template = WorkflowTemplate(
+            businessKey: businessKey,
             title: "New Lead Workflow",
             icon: "list.bullet",
             iconColor: .blue,
@@ -230,27 +238,28 @@ enum SampleDataContainer {
             configurations: [config]
         )
         let context = container.mainContext
+        let bk = "BUS_SAMPLE1"
 
         // Business
         let business = Business.sample
         context.insert(business)
 
         // Clients
-        let clients = Client.sampleClients(forBusinessKey: business.businessKey)
+        let clients = Client.sampleClients(forBusinessKey: bk)
         clients.forEach { client in
             client.business = business
             context.insert(client)
         }
 
         // Projects
-        let projects = Project.sampleProjects(clients: clients)
+        let projects = Project.sampleProjects(businessKey: bk, clients: clients)
         projects.forEach { project in
             project.business = business
             context.insert(project)
         }
 
         // Resources
-        let resources = Resource.sampleResources
+        let resources = Resource.sampleResources(businessKey: bk)
         resources.forEach { resource in
             resource.business = business
             context.insert(resource)
@@ -263,18 +272,17 @@ enum SampleDataContainer {
         }
 
         // Invoices
-        Invoice.sampleInvoices(clients: clients, projects: projects)
+        Invoice.sampleInvoices(businessKey: bk, clients: clients, projects: projects)
             .forEach { context.insert($0) }
 
         // Appointments
-        Appointment.sampleAppointments(clients: clients, projects: projects)
+        Appointment.sampleAppointments(businessKey: bk, clients: clients, projects: projects)
             .forEach { context.insert($0) }
 
         // Workflow Template
-        let template = WorkflowTemplate.sampleNewLeadTemplate
+        let template = WorkflowTemplate.sampleNewLeadTemplate(businessKey: bk)
         template.business = business
         context.insert(template)
-
 
         return container
     }

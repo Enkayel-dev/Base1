@@ -71,7 +71,7 @@ struct MainTabView: View {
                         workflowService.setContext(modelContext)
 
                         // Start a test workflow from template for development
-                        let template = WorkflowTemplate.sampleNewLeadTemplate
+                        let template = WorkflowTemplate.sampleNewLeadTemplate(businessKey: "BUS_DEV00001")
                         modelContext.insert(template)
                         workflowService.startWorkflow(from: template)
 

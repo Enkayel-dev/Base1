@@ -13,6 +13,7 @@ public final class Resource {
 
     // MARK: - Fields
 
+    public var businessKey: String
     public var name: String
     public var resourceDescription: String?
     public var categoryRaw: String
@@ -52,6 +53,7 @@ public final class Resource {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         name: String,
         description: String? = nil,
         category: ResourceCategory = .other,
@@ -60,6 +62,7 @@ public final class Resource {
         unit: String? = nil,
         isAvailable: Bool = true
     ) {
+        self.businessKey = businessKey
         self.name = name
         self.resourceDescription = description
         self.categoryRaw = category.rawValue

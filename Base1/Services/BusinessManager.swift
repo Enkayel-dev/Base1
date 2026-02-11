@@ -3,7 +3,7 @@ import SwiftData
 import Observation
 
 
-@Observable
+@MainActor @Observable
 final class BusinessManager {
 
     // MARK: - Shared state

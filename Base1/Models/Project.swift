@@ -13,6 +13,7 @@ public final class Project {
 
     // MARK: - Fields
 
+    public var businessKey: String
     public var title: String
     public var projectDescription: String?
     public var statusRaw: String
@@ -73,6 +74,7 @@ public final class Project {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         title: String,
         description: String? = nil,
         status: ProjectStatus = .planning,
@@ -80,6 +82,7 @@ public final class Project {
         startDate: Date? = nil,
         dueDate: Date? = nil
     ) {
+        self.businessKey = businessKey
         self.title = title
         self.projectDescription = description
         self.statusRaw = status.rawValue

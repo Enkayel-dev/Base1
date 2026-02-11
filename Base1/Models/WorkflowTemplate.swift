@@ -15,6 +15,7 @@ public final class WorkflowTemplate {
 
     // MARK: - Fields
 
+    public var businessKey: String
     public var title: String
     public var icon: String
     public var iconColorHex: String
@@ -51,12 +52,14 @@ public final class WorkflowTemplate {
     // MARK: - Init
 
     public init(
+        businessKey: String,
         title: String,
         icon: String = "list.bullet",
         iconColor: Color = .blue,
         category: WorkflowCategory = .general,
         isSystemTemplate: Bool = false
     ) {
+        self.businessKey = businessKey
         self.title = title
         self.icon = icon
         self.iconColorHex = iconColor.toHex() ?? "#0000FF"
