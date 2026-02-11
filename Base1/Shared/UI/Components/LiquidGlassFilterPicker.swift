@@ -7,14 +7,22 @@
 
 import SwiftUI
 
-struct LiquidGlassFilterPicker: View {
-    @Binding var selectedFilter: FilterOption
+// MARK: - Filterable Protocol
+
+protocol Filterable: CaseIterable, Identifiable, Hashable where AllCases: RandomAccessCollection {
+    var title: String { get }
+}
+
+// MARK: - Liquid Glass Filter Picker
+
+struct LiquidGlassFilterPicker<Filter: Filterable>: View {
+    @Binding var selectedFilter: Filter
     @Namespace private var glassNS
-    
+
     var body: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
-                ForEach(FilterOption.allCases) { filter in
+                ForEach(Filter.allCases) { filter in
                     filterButton(for: filter)
                 }
             }
@@ -24,11 +32,11 @@ struct LiquidGlassFilterPicker: View {
             .clipShape(RoundedRectangle(cornerRadius: 20))
         }
     }
-    
+
     @ViewBuilder
-    private func filterButton(for filter: FilterOption) -> some View {
+    private func filterButton(for filter: Filter) -> some View {
         let isSelected = selectedFilter == filter
-        
+
         Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 selectedFilter = filter
@@ -54,9 +62,9 @@ struct LiquidGlassFilterPicker: View {
     }
 }
 
-// MARK: - Filter Option Model
+// MARK: - Client Filter Option
 
-enum FilterOption: String, CaseIterable, Identifiable {
+enum FilterOption: String, CaseIterable, Identifiable, Filterable {
     case all = "All"
     case lead = "Lead"
     case active = "Active"
@@ -66,6 +74,18 @@ enum FilterOption: String, CaseIterable, Identifiable {
     var title: String { rawValue }
 }
 
+// MARK: - Project Filter Option
+
+enum ProjectFilterOption: String, CaseIterable, Identifiable, Filterable {
+    case all = "All"
+    case planning = "Planning"
+    case inProgress = "Active"
+    case onHold = "On Hold"
+    case completed = "Done"
+
+    var id: String { rawValue }
+    var title: String { rawValue }
+}
 
 // MARK: - Preview
 

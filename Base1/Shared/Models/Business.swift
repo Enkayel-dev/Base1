@@ -19,7 +19,6 @@ public final class Business {
     public var email: String?
     public var phone: String?
     public var address: String?
-    public var notes: String?
     public var taxNumber: String?
 
     @Attribute(.externalStorage)
@@ -39,6 +38,15 @@ public final class Business {
 
     @Relationship(deleteRule: .cascade, inverse: \WorkflowTemplate.business)
     public var workflowTemplates: [WorkflowTemplate] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \Member.business)
+    public var members: [Member] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \JobType.business)
+    public var jobTypes: [JobType] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \ScopeItemTemplate.business)
+    public var scopeItemTemplates: [ScopeItemTemplate] = []
 
     // MARK: - Init
     public init(

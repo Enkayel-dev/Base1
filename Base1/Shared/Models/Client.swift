@@ -47,10 +47,7 @@ public final class Client {
     // MARK: - Computed
 
     public var displayName: String {
-        if let companyName, !companyName.isEmpty {
-            return companyName
-        }
-        return "\(firstName) \(lastName)"
+        "\(firstName) \(lastName)"
     }
 
     public var status: ClientStatus {

@@ -14,6 +14,8 @@ struct BusinessProfile: View {
 
     @Environment(BusinessManager.self) private var businessManager
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showingInviteMember = false
+    @State private var showingJobTypes = false
 
     private var business: Business? {
         businessManager.currentBusiness
@@ -53,17 +55,11 @@ struct BusinessProfile: View {
                             LabeledTextField("Tax No.", text: $business.taxNumber.orEmpty, icon: "number")
                         }
 
-                        // MARK: - Notes
-                        sectionCard {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("Notes", systemImage: "note.text")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                TextEditor(text: $business.notes.orEmpty)
-                                    .frame(minHeight: 100)
-                                    .scrollContentBackground(.hidden)
-                            }
-                        }
+                        // MARK: - Team
+                        teamSection(business: business)
+
+                        // MARK: - Job Types & Templates
+                        jobTypesSection
 
                         // MARK: - Business Key
                         VStack(spacing: 4) {
@@ -80,6 +76,94 @@ struct BusinessProfile: View {
                     .padding(.bottom, 120)
                 }
             }
+        }
+        .sheet(isPresented: $showingInviteMember) {
+            InviteMemberView()
+        }
+    }
+
+    // MARK: - Team Section
+
+    @ViewBuilder
+    private func teamSection(business: Business) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Team", systemImage: "person.3")
+                    .font(.headline)
+
+                Text("\(business.members.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button {
+                    showingInviteMember = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+
+            let sortedMembers = business.members.sorted { m1, m2 in
+                let order: [MemberRole] = [.owner, .admin, .member]
+                let i1 = order.firstIndex(of: m1.role) ?? 2
+                let i2 = order.firstIndex(of: m2.role) ?? 2
+                return i1 < i2
+            }
+
+            if sortedMembers.isEmpty {
+                Text("No team members yet")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(sortedMembers.enumerated()), id: \.element.id) { index, member in
+                        MemberRowView(member: member)
+                            .onTapGesture {
+                                if member.inviteStatus == .pending {
+                                    member.inviteStatus = .accepted
+                                    member.acceptedAt = .now
+                                    member.updatedAt = .now
+                                }
+                            }
+                        if index < sortedMembers.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
+                .padding()
+                .background(.thinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
+    // MARK: - Job Types Section
+
+    private var jobTypesSection: some View {
+        Button {
+            showingJobTypes = true
+        } label: {
+            HStack {
+                Label("Job Types & Templates", systemImage: "wrench.and.screwdriver")
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .foregroundStyle(.primary)
+        .sheet(isPresented: $showingJobTypes) {
+            JobTypeListView()
         }
     }
 

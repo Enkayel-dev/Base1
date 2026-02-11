@@ -22,6 +22,10 @@ enum Base1SchemaV1: VersionedSchema {
             WorkflowStepTemplate.self,
             Workflow.self,
             WorkflowStep.self,
+            ScopeItem.self,
+            Member.self,
+            JobType.self,
+            ScopeItemTemplate.self,
         ]
     }
 }

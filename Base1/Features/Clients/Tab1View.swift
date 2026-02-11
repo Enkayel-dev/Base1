@@ -21,13 +21,12 @@ struct Tab1View: View {
     var body: some View {
         VStack(spacing: 20) {
 
-            HStack {
-                Spacer()
+            VStack(spacing: 8) {
                 Text("Clients")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
-                Spacer()
+
                 Button {
                     showingAddClient = true
                 } label: {
@@ -36,7 +35,7 @@ struct Tab1View: View {
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.horizontal)
+            .frame(maxWidth: .infinity, alignment: .center)
 
             LiquidGlassFilterPicker(selectedFilter: $selectedFilter)
                 .padding(.horizontal)

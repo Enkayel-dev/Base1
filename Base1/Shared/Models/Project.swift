@@ -17,7 +17,7 @@ public final class Project {
     public var title: String
     public var projectDescription: String?
     public var statusRaw: String
-    public var priorityRaw: String
+    public var projectTypeRaw: String?
     public var startDate: Date?
     public var dueDate: Date?
     public var completedDate: Date?
@@ -44,16 +44,16 @@ public final class Project {
     @Relationship(deleteRule: .cascade, inverse: \Workflow.project)
     public var workflows: [Workflow] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \ScopeItem.project)
+    public var scopeItems: [ScopeItem] = []
+
+    public var assignedMembers: [Member] = []
+
     // MARK: - Computed
 
     public var status: ProjectStatus {
         get { ProjectStatus(rawValue: statusRaw) ?? .planning }
         set { statusRaw = newValue.rawValue }
-    }
-
-    public var priority: ProjectPriority {
-        get { ProjectPriority(rawValue: priorityRaw) ?? .medium }
-        set { priorityRaw = newValue.rawValue }
     }
 
     public var isOverdue: Bool {
@@ -71,6 +71,18 @@ public final class Project {
             .reduce(Decimal.zero) { $0 + $1.amount }
     }
 
+    public var totalScopeCost: Decimal {
+        scopeItems.compactMap { $0.estimatedCost }.reduce(Decimal.zero, +)
+    }
+
+    public var totalLaborHours: Decimal {
+        scopeItems.compactMap { $0.laborHours }.reduce(Decimal.zero, +)
+    }
+
+    public var hasInventoryIssues: Bool {
+        scopeItems.contains { $0.inventoryShortfall > 0 }
+    }
+
     // MARK: - Init
 
     public init(
@@ -78,7 +90,7 @@ public final class Project {
         title: String,
         description: String? = nil,
         status: ProjectStatus = .planning,
-        priority: ProjectPriority = .medium,
+        projectType: String? = nil,
         startDate: Date? = nil,
         dueDate: Date? = nil
     ) {
@@ -86,7 +98,7 @@ public final class Project {
         self.title = title
         self.projectDescription = description
         self.statusRaw = status.rawValue
-        self.priorityRaw = priority.rawValue
+        self.projectTypeRaw = projectType
         self.startDate = startDate
         self.dueDate = dueDate
         self.createdAt = .now
@@ -116,22 +128,3 @@ public enum ProjectStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Project Priority
-
-public enum ProjectPriority: String, Codable, CaseIterable, Identifiable {
-    case low
-    case medium
-    case high
-    case urgent
-
-    public var id: String { rawValue }
-
-    public var displayTitle: String {
-        switch self {
-        case .low: "Low"
-        case .medium: "Medium"
-        case .high: "High"
-        case .urgent: "Urgent"
-        }
-    }
-}

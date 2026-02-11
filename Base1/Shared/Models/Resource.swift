@@ -11,7 +11,7 @@ import SwiftData
 @Model
 public final class Resource {
 
-    // MARK: - Fields
+    // MARK: - Common Fields
 
     public var businessKey: String
     public var name: String
@@ -29,15 +29,55 @@ public final class Resource {
     public var createdAt: Date
     public var updatedAt: Date
 
-    // MARK: - Relationships
+    // MARK: - Material-Specific Fields
+
+    public var materialTypeName: String?
+    public var variantLabel: String?
+
+    // MARK: - Vehicle-Specific Fields
+
+    public var vehicleMake: String?
+    public var vehicleModel: String?
+    public var startingKilometers: Int?
+    public var serviceNotes: String?
+
+    // MARK: - Tool-Specific Fields
+
+    public var isShopTool: Bool
+
+    // MARK: - Common Relationships
 
     public var business: Business?
     public var projects: [Project] = []
 
+    @Relationship(deleteRule: .nullify, inverse: \ScopeItem.resource)
+    public var scopeItems: [ScopeItem] = []
+
+    // MARK: - Equipment Relationships
+
+    @Relationship(deleteRule: .nullify, inverse: \Resource.usedByEquipment)
+    public var equipmentMaterials: [Resource] = []
+
+    public var usedByEquipment: [Resource] = []
+
+    // MARK: - Material Relationships
+
+    public var parentMaterial: Resource?
+
+    @Relationship(deleteRule: .cascade, inverse: \Resource.parentMaterial)
+    public var materialVariants: [Resource] = []
+
+    // MARK: - Tool Relationships
+
+    public var assignedVehicle: Resource?
+
+    @Relationship(deleteRule: .nullify, inverse: \Resource.assignedVehicle)
+    public var assignedTools: [Resource] = []
+
     // MARK: - Computed
 
     public var category: ResourceCategory {
-        get { ResourceCategory(rawValue: categoryRaw) ?? .other }
+        get { ResourceCategory(rawValue: categoryRaw) ?? .equipment }
         set { categoryRaw = newValue.rawValue }
     }
 
@@ -50,17 +90,50 @@ public final class Resource {
         projects.count
     }
 
+    public var allocatedQuantity: Int {
+        scopeItems.reduce(0) { $0 + $1.quantityNeeded }
+    }
+
+    public var availableQuantity: Int {
+        quantity - allocatedQuantity
+    }
+
+    public var isMaterialType: Bool {
+        category == .material && materialTypeName != nil && parentMaterial == nil
+    }
+
+    public var isMaterialVariant: Bool {
+        category == .material && parentMaterial != nil
+    }
+
+    public var toolLocationLabel: String {
+        if isShopTool { return "Shop" }
+        if let vehicle = assignedVehicle { return vehicle.name }
+        return "Unassigned"
+    }
+
+    public var vehicleDisplayLabel: String {
+        [vehicleMake, vehicleModel].compactMap { $0 }.joined(separator: " ")
+    }
+
     // MARK: - Init
 
     public init(
         businessKey: String,
         name: String,
         description: String? = nil,
-        category: ResourceCategory = .other,
+        category: ResourceCategory = .equipment,
         unitCost: Decimal? = nil,
         quantity: Int = 1,
         unit: String? = nil,
-        isAvailable: Bool = true
+        isAvailable: Bool = true,
+        materialTypeName: String? = nil,
+        variantLabel: String? = nil,
+        vehicleMake: String? = nil,
+        vehicleModel: String? = nil,
+        startingKilometers: Int? = nil,
+        serviceNotes: String? = nil,
+        isShopTool: Bool = false
     ) {
         self.businessKey = businessKey
         self.name = name
@@ -70,6 +143,13 @@ public final class Resource {
         self.quantity = quantity
         self.unit = unit
         self.isAvailable = isAvailable
+        self.materialTypeName = materialTypeName
+        self.variantLabel = variantLabel
+        self.vehicleMake = vehicleMake
+        self.vehicleModel = vehicleModel
+        self.startingKilometers = startingKilometers
+        self.serviceNotes = serviceNotes
+        self.isShopTool = isShopTool
         self.createdAt = .now
         self.updatedAt = .now
     }
@@ -82,7 +162,6 @@ public enum ResourceCategory: String, Codable, CaseIterable, Identifiable {
     case material
     case vehicle
     case tool
-    case other
 
     public var id: String { rawValue }
 
@@ -92,7 +171,6 @@ public enum ResourceCategory: String, Codable, CaseIterable, Identifiable {
         case .material: "Material"
         case .vehicle: "Vehicle"
         case .tool: "Tool"
-        case .other: "Other"
         }
     }
 
@@ -102,7 +180,6 @@ public enum ResourceCategory: String, Codable, CaseIterable, Identifiable {
         case .material: "shippingbox"
         case .vehicle: "car"
         case .tool: "wrench.and.screwdriver"
-        case .other: "questionmark.folder"
         }
     }
 }

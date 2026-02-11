@@ -20,12 +20,12 @@ struct AddClientView: View {
     // MARK: - Manual Form Fields
     @State private var firstName = ""
     @State private var lastName = ""
+    @State private var hasCompany = false
     @State private var companyName = ""
     @State private var email = ""
     @State private var phone = ""
     @State private var address = ""
     @State private var notes = ""
-    @State private var status: ClientStatus = .lead
 
     var body: some View {
         NavigationStack {
@@ -102,7 +102,12 @@ struct AddClientView: View {
                 Divider()
                 LabeledTextField("Last Name", text: $lastName, icon: "person")
                 Divider()
-                LabeledTextField("Company", text: $companyName, icon: "building.2")
+                Toggle(isOn: $hasCompany) {
+                    Label("Company", systemImage: "building.2")
+                }
+                if hasCompany {
+                    LabeledTextField("Company Name", text: $companyName, icon: "building.2")
+                }
             }
 
             // Contact Section
@@ -116,18 +121,6 @@ struct AddClientView: View {
 
             // Details Section
             sectionCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Status", systemImage: "flag")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker("Status", selection: $status) {
-                        ForEach(ClientStatus.allCases) { s in
-                            Text(s.displayTitle).tag(s)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Notes", systemImage: "note.text")
                         .font(.caption)
@@ -248,11 +241,11 @@ struct AddClientView: View {
             businessKey: businessKey,
             firstName: firstName,
             lastName: lastName,
-            companyName: companyName.isEmpty ? nil : companyName,
+            companyName: hasCompany && !companyName.isEmpty ? companyName : nil,
             email: email.isEmpty ? nil : email,
             phone: phone.isEmpty ? nil : phone,
             address: address.isEmpty ? nil : address,
-            status: status
+            status: .lead
         )
         client.notes = notes.isEmpty ? nil : notes
         client.business = businessManager.currentBusiness

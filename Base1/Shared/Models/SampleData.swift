@@ -72,10 +72,10 @@ extension Project {
 
         let p1 = Project(
             businessKey: businessKey,
-            title: "Kitchen Renovation",
+            title: "Renovation for Tremblay",
             description: "Full kitchen remodel with custom cabinets",
             status: .inProgress,
-            priority: .high,
+            projectType: "Renovation",
             startDate: .now.addingTimeInterval(-30 * 86400),
             dueDate: .now.addingTimeInterval(60 * 86400)
         )
@@ -83,19 +83,18 @@ extension Project {
 
         let p2 = Project(
             businessKey: businessKey,
-            title: "Office Buildout",
+            title: "New Build for Tremblay",
             description: "New office partition walls and electrical",
-            status: .planning,
-            priority: .medium,
+            projectType: "New Build",
             dueDate: .now.addingTimeInterval(90 * 86400)
         )
         p2.client = clients[0]
 
         let p3 = Project(
             businessKey: businessKey,
-            title: "Bathroom Tile Work",
+            title: "Repair for Roy",
             status: .inProgress,
-            priority: .medium,
+            projectType: "Repair",
             startDate: .now.addingTimeInterval(-14 * 86400),
             dueDate: .now.addingTimeInterval(21 * 86400)
         )
@@ -109,18 +108,260 @@ extension Project {
 
 extension Resource {
     static func sampleResources(businessKey: String) -> [Resource] {
-        [
-            Resource(businessKey: businessKey, name: "Table Saw", category: .tool, quantity: 1),
-            Resource(
-                businessKey: businessKey,
-                name: "Ceramic Tile - White 12x12",
-                category: .material,
-                unitCost: 3.50,
-                quantity: 200,
-                unit: "sqft"
-            ),
-            Resource(businessKey: businessKey, name: "Work Van #1", category: .vehicle, quantity: 1),
+        // Equipment
+        let tableSaw = Resource(
+            businessKey: businessKey,
+            name: "Table Saw",
+            category: .equipment,
+            quantity: 1
+        )
+
+        // Material Types
+        let sandpaperType = Resource(
+            businessKey: businessKey,
+            name: "Orbital Sand Paper",
+            category: .material,
+            materialTypeName: "Orbital Sand Paper"
+        )
+
+        let sandpaper40 = Resource(
+            businessKey: businessKey,
+            name: "Orbital Sand Paper — 40 grit",
+            category: .material,
+            unitCost: 2.50,
+            quantity: 50,
+            unit: "sheets",
+            variantLabel: "40 grit"
+        )
+        sandpaper40.parentMaterial = sandpaperType
+
+        let sandpaper60 = Resource(
+            businessKey: businessKey,
+            name: "Orbital Sand Paper — 60 grit",
+            category: .material,
+            unitCost: 2.50,
+            quantity: 30,
+            unit: "sheets",
+            variantLabel: "60 grit"
+        )
+        sandpaper60.parentMaterial = sandpaperType
+
+        let sandpaper80 = Resource(
+            businessKey: businessKey,
+            name: "Orbital Sand Paper — 80 grit",
+            category: .material,
+            unitCost: 2.75,
+            quantity: 40,
+            unit: "sheets",
+            variantLabel: "80 grit"
+        )
+        sandpaper80.parentMaterial = sandpaperType
+
+        let stainType = Resource(
+            businessKey: businessKey,
+            name: "Deck Stain",
+            category: .material,
+            materialTypeName: "Deck Stain"
+        )
+
+        let stainBrown = Resource(
+            businessKey: businessKey,
+            name: "Deck Stain — Chocolate Brown",
+            category: .material,
+            unitCost: 45.00,
+            quantity: 10,
+            unit: "gallons",
+            variantLabel: "Chocolate Brown"
+        )
+        stainBrown.parentMaterial = stainType
+
+        let stainCedar = Resource(
+            businessKey: businessKey,
+            name: "Deck Stain — Red Cedar",
+            category: .material,
+            unitCost: 45.00,
+            quantity: 8,
+            unit: "gallons",
+            variantLabel: "Red Cedar"
+        )
+        stainCedar.parentMaterial = stainType
+
+        // Standalone material (no parent type)
+        let ceramicTile = Resource(
+            businessKey: businessKey,
+            name: "Ceramic Tile - White 12x12",
+            category: .material,
+            unitCost: 3.50,
+            quantity: 200,
+            unit: "sqft"
+        )
+
+        // Vehicle
+        let van = Resource(
+            businessKey: businessKey,
+            name: "Work Van #1",
+            category: .vehicle,
+            quantity: 1,
+            vehicleMake: "Ford",
+            vehicleModel: "Transit",
+            startingKilometers: 45000
+        )
+
+        // Tools
+        let orbitalSander = Resource(
+            businessKey: businessKey,
+            name: "Orbital Sander",
+            category: .tool,
+            quantity: 1,
+            isShopTool: true
+        )
+
+        let drillSet = Resource(
+            businessKey: businessKey,
+            name: "Drill Set",
+            category: .tool,
+            quantity: 1
+        )
+        drillSet.assignedVehicle = van
+
+        // Link equipment to materials
+        tableSaw.equipmentMaterials = [sandpaperType]
+
+        return [
+            tableSaw,
+            sandpaperType, sandpaper40, sandpaper60, sandpaper80,
+            stainType, stainBrown, stainCedar,
+            ceramicTile,
+            van,
+            orbitalSander, drillSet,
         ]
+    }
+}
+
+// MARK: - Sample Scope Items
+
+extension ScopeItem {
+    static func sampleScopeItems(businessKey: String, projects: [Project], resources: [Resource]) -> [ScopeItem] {
+        guard projects.count >= 3, resources.count >= 9 else { return [] }
+
+        // resources[8] = Ceramic Tile
+        let item1 = ScopeItem(
+            businessKey: businessKey,
+            quantityNeeded: 150,
+            laborHours: 12.0,
+            costMarkup: 0.15,
+            description: "White ceramic tile for bathroom walls",
+            status: .ordered
+        )
+        item1.project = projects[2]
+        item1.resource = resources[8]
+
+        // resources[0] = Table Saw
+        let item2 = ScopeItem(
+            businessKey: businessKey,
+            quantityNeeded: 1,
+            laborHours: 4.0,
+            description: "Table saw for cabinet cuts",
+            status: .fulfilled
+        )
+        item2.project = projects[0]
+        item2.resource = resources[0]
+
+        return [item1, item2]
+    }
+}
+
+// MARK: - Sample Members
+
+extension Member {
+    static func sampleMembers(businessKey: String) -> [Member] {
+        let owner = Member(
+            businessKey: businessKey,
+            email: "nick@tremcon.ca",
+            displayName: "Nicholas Lachapelle",
+            role: .owner,
+            inviteStatus: .accepted
+        )
+        owner.acceptedAt = .now
+
+        let admin = Member(
+            businessKey: businessKey,
+            email: "marie@tremcon.ca",
+            displayName: "Marie Tremblay",
+            role: .admin,
+            inviteStatus: .accepted
+        )
+        admin.acceptedAt = .now.addingTimeInterval(-7 * 86400)
+
+        let member = Member(
+            businessKey: businessKey,
+            email: "luc@tremcon.ca",
+            displayName: "Luc Bergeron",
+            role: .member,
+            inviteStatus: .accepted
+        )
+        member.acceptedAt = .now.addingTimeInterval(-3 * 86400)
+
+        let pending = Member(
+            businessKey: businessKey,
+            email: "alain@tremcon.ca",
+            displayName: "Alain Dubois",
+            role: .member,
+            inviteStatus: .pending
+        )
+
+        return [owner, admin, member, pending]
+    }
+}
+
+// MARK: - Sample Job Types
+
+extension JobType {
+    static func sampleJobTypes(businessKey: String) -> [JobType] {
+        [
+            JobType(businessKey: businessKey, name: "Renovation", icon: "hammer", sortOrder: 0),
+            JobType(businessKey: businessKey, name: "New Build", icon: "house", sortOrder: 1),
+            JobType(businessKey: businessKey, name: "Repair", icon: "wrench.and.screwdriver", sortOrder: 2),
+        ]
+    }
+}
+
+// MARK: - Sample Scope Item Templates
+
+extension ScopeItemTemplate {
+    static func sampleTemplates(businessKey: String, jobTypes: [JobType], resources: [Resource]) -> [ScopeItemTemplate] {
+        guard jobTypes.count >= 3, resources.count >= 9 else { return [] }
+
+        // resources[8] = Ceramic Tile, resources[0] = Table Saw
+        let t1 = ScopeItemTemplate(
+            businessKey: businessKey,
+            name: "Tile Installation",
+            defaultQuantity: 100,
+            defaultLaborHours: 8.0,
+            defaultCostMarkup: 0.15
+        )
+        t1.resource = resources[8]
+        t1.jobType = jobTypes[0]
+
+        let t2 = ScopeItemTemplate(
+            businessKey: businessKey,
+            name: "Cabinet Cuts",
+            defaultQuantity: 1,
+            defaultLaborHours: 4.0
+        )
+        t2.resource = resources[0]
+        t2.jobType = jobTypes[0]
+
+        let t3 = ScopeItemTemplate(
+            businessKey: businessKey,
+            name: "General Tile Work",
+            defaultQuantity: 50,
+            defaultLaborHours: 6.0
+        )
+        t3.resource = resources[8]
+        t3.jobType = jobTypes[2]
+
+        return [t1, t2, t3]
     }
 }
 
@@ -162,8 +403,60 @@ extension Appointment {
     static func sampleAppointments(businessKey: String, clients: [Client], projects: [Project]) -> [Appointment] {
         guard clients.count >= 2, projects.count >= 1 else { return [] }
 
+        let today = Calendar.current.startOfDay(for: .now)
         let tomorrow = Calendar.current.startOfDay(for: .now.addingTimeInterval(86400))
 
+        // Today — morning meeting
+        let t1 = Appointment(
+            businessKey: businessKey,
+            title: "Team Standup",
+            type: .meeting,
+            startDate: today.addingTimeInterval(8 * 3600),
+            endDate: today.addingTimeInterval(9 * 3600)
+        )
+
+        // Today — overlapping midday events
+        let t2 = Appointment(
+            businessKey: businessKey,
+            title: "Client Lunch Meeting",
+            type: .consultation,
+            startDate: today.addingTimeInterval(12 * 3600),
+            endDate: today.addingTimeInterval(13 * 3600),
+            location: "Café du Marché"
+        )
+        t2.client = clients[0]
+
+        let t3 = Appointment(
+            businessKey: businessKey,
+            title: "Supplier Call",
+            type: .followUp,
+            startDate: today.addingTimeInterval(12.5 * 3600),
+            endDate: today.addingTimeInterval(13.5 * 3600)
+        )
+
+        // Today — afternoon site visit
+        let t4 = Appointment(
+            businessKey: businessKey,
+            title: "Bathroom Tile Inspection",
+            type: .siteVisit,
+            startDate: today.addingTimeInterval(15 * 3600),
+            endDate: today.addingTimeInterval(16.5 * 3600),
+            location: "456 Rue des Érables"
+        )
+        t4.client = clients[2]
+        t4.project = projects[2]
+
+        // Today — all-day event
+        let t5 = Appointment(
+            businessKey: businessKey,
+            title: "Permit Deadline",
+            type: .delivery,
+            startDate: today,
+            endDate: today.addingTimeInterval(86399),
+            isAllDay: true
+        )
+
+        // Tomorrow — existing events
         let a1 = Appointment(
             businessKey: businessKey,
             title: "Kitchen Site Visit",
@@ -184,7 +477,7 @@ extension Appointment {
         )
         a2.client = clients[1]
 
-        return [a1, a2]
+        return [t1, t2, t3, t4, t5, a1, a2]
     }
 }
 
@@ -266,10 +559,42 @@ enum SampleDataContainer {
         }
 
         // Assign resources to projects
-        if projects.count >= 3, resources.count >= 2 {
-            projects[0].resources.append(resources[0])
-            projects[2].resources.append(resources[1])
+        if projects.count >= 3, resources.count >= 9 {
+            projects[0].resources.append(resources[0])  // Table Saw
+            projects[2].resources.append(resources[8])  // Ceramic Tile
         }
+
+        // Members
+        let members = Member.sampleMembers(businessKey: bk)
+        members.forEach { member in
+            member.business = business
+            context.insert(member)
+        }
+
+        // Assign members to projects
+        if projects.count >= 3, members.count >= 3 {
+            projects[0].assignedMembers = [members[0], members[1], members[2]]
+            projects[1].assignedMembers = [members[0], members[1]]
+            projects[2].assignedMembers = [members[2]]
+        }
+
+        // Job Types
+        let jobTypes = JobType.sampleJobTypes(businessKey: bk)
+        jobTypes.forEach { jt in
+            jt.business = business
+            context.insert(jt)
+        }
+
+        // Scope Item Templates
+        let scopeTemplates = ScopeItemTemplate.sampleTemplates(businessKey: bk, jobTypes: jobTypes, resources: resources)
+        scopeTemplates.forEach { st in
+            st.business = business
+            context.insert(st)
+        }
+
+        // Scope Items
+        let scopeItems = ScopeItem.sampleScopeItems(businessKey: bk, projects: projects, resources: resources)
+        scopeItems.forEach { context.insert($0) }
 
         // Invoices
         Invoice.sampleInvoices(businessKey: bk, clients: clients, projects: projects)

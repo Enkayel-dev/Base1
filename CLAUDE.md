@@ -93,10 +93,15 @@ Files are grouped by **feature** (Clients, Workflow, Settings, etc.) rather than
 
 ```
 Features/
-├── Clients/          ← ClientsView, AddClientView, ClientRowView, EmptyClientsView
-├── Schedule/         ← ScheduleView
-├── Workflow/         ← WorkflowModels, WorkflowService, WorkflowMiniCard
-└── Settings/         ← SettingsView, BusinessProfile
+├── Clients/          ← Tab1View, AddClientView, ClientRowView, EmptyClientsView
+├── Schedule/         ← Tab2View, AddAppointmentView, AppointmentRowView, EmptyScheduleView
+├── Projects/         ← Tab3View, AddProjectView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView
+├── Resources/        ← Tab4View, AddEquipmentView, AddMaterialView, AddVehicleView, AddToolView, ResourceRowView, EmptyResourcesView
+├── Finances/         ← Tab5View (placeholder)
+├── Workflow/         ← WorkflowModels, WorkflowService, WorkflowMiniCard, WorkflowViewFactory (stub)
+├── Background/       ← AnimatedMeshBackground, MeshScheme, BackgroundState, BackgroundService, BackgroundCoordinator (unused)
+├── Navigation/       ← MainTabView, TabRouter, BottomBarView, CustomBottomTabBar, SearchBar, SearchState, BusinessLogo, SettingsButton
+└── Settings/         ← SettingsView, BusinessProfile, MemberRowView, InviteMemberView, JobTypeListView, AddJobTypeView, JobTypeDetailView, AddScopeItemTemplateView
 ```
 
 #### Pattern: Environment Injection from App Root
@@ -177,25 +182,35 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 
 | File | Type | Purpose |
 |------|------|---------|
-| `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, notes?, taxNumber?, logoData?, createdAt |
+| `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates/members/jobTypes/scopeItemTemplates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, taxNumber?, logoData?, createdAt |
 | `Client.swift` | `Client`, `ClientStatus` | Customer with status (lead/active/closed). Has businessKey |
-| `Project.swift` | `Project`, `ProjectStatus`, `ProjectPriority` | Project tracking with budget/timeline. Has businessKey |
+| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, computed totalScopeCost, totalLaborHours, hasInventoryIssues. No priority field. |
 | `Invoice.swift` | `Invoice`, `InvoiceStatus` | Billing (draft/sent/paid/overdue/cancelled). Has businessKey |
 | `Appointment.swift` | `Appointment`, `AppointmentType` | Scheduling (consultation/siteVisit/meeting/followUp/delivery). Has businessKey |
-| `Resource.swift` | `Resource`, `ResourceCategory` | Equipment/materials/vehicles/tools. Has businessKey |
+| `Resource.swift` | `Resource`, `ResourceCategory` | Equipment/materials/vehicles/tools with category-specific fields. Equipment: equipmentMaterials relationship. Material: materialTypeName, variantLabel, parentMaterial/materialVariants self-referential parent-child. Vehicle: vehicleMake, vehicleModel, startingKilometers, serviceNotes. Tool: assignedVehicle relationship, isShopTool. Common: businessKey, scopeItems relationship, computed allocatedQuantity, availableQuantity, isMaterialType, isMaterialVariant, toolLocationLabel, vehicleDisplayLabel |
+| `ScopeItem.swift` | `ScopeItem`, `ScopeItemStatus` | Project scoping line items — bridges Project ↔ Resource. Fields: quantityNeeded, laborHours, costMarkup, status (pending/ordered/fulfilled). Computed: estimatedCost, inventoryShortfall (global allocation). Has businessKey |
+| `Member.swift` | `Member`, `MemberRole`, `InviteStatus` | Team members with roles (owner/admin/member). Fields: businessKey, email, displayName, roleRaw, inviteStatusRaw, invitedAt, acceptedAt?, createdAt, updatedAt. Relationships: business, assignedProjects (many-to-many with Project). Computed: role, inviteStatus, initials |
+| `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build, Repair). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates |
+| `ScopeItemTemplate.swift` | `ScopeItemTemplate` | Reusable scope item library entries linked to Resources. Fields: businessKey, name, defaultQuantity, defaultLaborHours?, defaultCostMarkup?, notes?, createdAt. Relationships: resource, business, jobType |
 | `WorkflowTemplate.swift` | `WorkflowTemplate`, `WorkflowStepTemplate`, `WorkflowCategory` | Reusable workflow blueprints. Has businessKey |
 | `SampleData.swift` | Extensions on all models | Preview/test data factories. All factories accept businessKey param |
 | `Schema/Base1SchemaV1.swift` | `Base1SchemaV1`, `Base1MigrationPlan` | SwiftData schema versioning |
 
 #### Model Relationships
 ```
-Business 1──* Client, Project, Resource, WorkflowTemplate
+Business 1──* Client, Project, Resource, WorkflowTemplate, Member, JobType, ScopeItemTemplate
 Client   1──* Project, Appointment, Invoice, Workflow
-Project  *──* Resource
+Project  *──* Resource (legacy)
+Project  *──* Member (assigned team)
+Project  1──* ScopeItem *──1 Resource
 Project  1──* Invoice, Appointment, Workflow
 WorkflowTemplate 1──* WorkflowStepTemplate
 WorkflowTemplate 1──* Workflow (instances)
 Workflow 1──* WorkflowStep
+Resource(Equipment) *──* Resource(Material) (equipmentMaterials / usedByEquipment)
+Resource(Material)  1──* Resource(Material) (parentMaterial / materialVariants, cascade)
+Resource(Tool)      *──1 Resource(Vehicle) (assignedVehicle / assignedTools)
+JobType  1──* ScopeItemTemplate *──1 Resource
 ```
 
 ### Services (`Shared/Services/`)
@@ -203,6 +218,7 @@ Workflow 1──* WorkflowStep
 |------|------|---------|
 | `BusinessManager.swift` | `BusinessManager` (@Observable) | Business entity CRUD, multi-tenancy, bootstrapping |
 | `ClientService.swift` | `ClientService` (@Observable) | Client filtering by status |
+| `AppointmentService.swift` | `AppointmentService` (@Observable), `ScheduleFilter` | Appointment filtering (all/upcoming/past/cancelled) and day grouping |
 
 ### UI Layer
 
@@ -233,19 +249,41 @@ Workflow 1──* WorkflowStep
 | `Features/Clients/AddClientView.swift` | `AddClientView` | Clients | Add client form |
 | `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
-| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Schedule tab (placeholder) |
-| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Projects tab (placeholder) |
-| `Features/Resources/Tab4View.swift` | `Tab4View` | Resources | Resources tab (placeholder) |
+| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment sheet |
+| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, positioned event blocks, overlap layout, now-line |
+| `Features/Schedule/AddAppointmentView.swift` | `AddAppointmentView` | Schedule | Add appointment form — type, date/time, all-day, location, client/project linking, reminders |
+| `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
+| `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
+| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project sheet |
+| `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template |
+| `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — status badge, job type label, client name, date range, overdue indicator |
+| `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
+| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail sheet — header, assigned team section, scope items list, summary cards (cost, labor, inventory warnings) |
+| `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker, quantity, labor hours, cost markup, live cost estimate, status |
+| `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icon, quantity, cost, status badge, inventory shortfall warning |
+| `Features/Resources/Tab4View.swift` | `Tab4View`, `ResourceListSheet` | Resources | 2x2 category grid (Equipment/Materials/Vehicles/Tools) — each card has Add and Open buttons. ResourceListSheet shows filtered list per category |
+| `Features/Resources/AddEquipmentView.swift` | `AddEquipmentView` | Resources | Add equipment form — name, description, materials used (multi-select), quantity, unit cost, availability, notes |
+| `Features/Resources/AddMaterialView.swift` | `AddMaterialView` | Resources | Add material form — two modes: "New Type" (creates material type) or "Add Variant" (picks parent type, enters variant label, quantity, unit cost) |
+| `Features/Resources/AddVehicleView.swift` | `AddVehicleView` | Resources | Add vehicle form — name, make, model, starting kilometers, service notes, availability |
+| `Features/Resources/AddToolView.swift` | `AddToolView` | Resources | Add tool form — name, location (Shop/Vehicle segmented), quantity, notes |
+| `Features/Resources/ResourceRowView.swift` | `ResourceRowView` | Resources | Resource list row — category-specific detail: equipment shows linked materials, material shows variant info, vehicle shows make/model/km, tool shows location |
+| `Features/Resources/EmptyResourcesView.swift` | `EmptyResourcesView` | Resources | Empty state |
 | `Features/Finances/Tab5View.swift` | `Tab5View` | Finances | Finances tab (placeholder) |
 | `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen (mock) |
-| `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo |
+| `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo, team management section, job types & templates link |
+| `Features/Settings/MemberRowView.swift` | `MemberRowView` | Settings | Team member list row — avatar initials, name, email, role badge, invite status |
+| `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form sheet — email, display name, role picker (admin/member) |
+| `Features/Settings/JobTypeListView.swift` | `JobTypeListView` | Settings | Job type list — manage job types and their scope item templates |
+| `Features/Settings/AddJobTypeView.swift` | `AddJobTypeView` | Settings | Add job type form — name, icon picker |
+| `Features/Settings/JobTypeDetailView.swift` | `JobTypeDetailView` | Settings | Job type detail — shows scope item templates, add new ones |
+| `Features/Settings/AddScopeItemTemplateView.swift` | `AddScopeItemTemplateView` | Settings | Add scope item template — resource picker, default quantity, labor hours, cost markup |
 
 #### Shared Components (`Shared/UI/Components/`)
 | File | Type | Purpose |
 |------|------|---------|
 | `LabeledTextField.swift` | `LabeledTextField` | Shared labeled text field with icon + keyboard type |
 | `BindingExtensions.swift` | `Binding<String?>.orEmpty` | Optional string binding helper |
-| `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker`, `FilterOption` | Glass morphism segmented control |
+| `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control — reusable across any feature with a `Filterable` enum |
 
 #### Design System (`Shared/Design/`)
 | File | Type | Purpose |
@@ -287,13 +325,18 @@ Base1/
 │   │   ├── Invoice.swift
 │   │   ├── Appointment.swift
 │   │   ├── Resource.swift
+│   │   ├── ScopeItem.swift
+│   │   ├── Member.swift
+│   │   ├── JobType.swift
+│   │   ├── ScopeItemTemplate.swift
 │   │   ├── WorkflowTemplate.swift
 │   │   ├── SampleData.swift
 │   │   └── Schema/
 │   │       └── Base1SchemaV1.swift
 │   ├── Services/
 │   │   ├── BusinessManager.swift
-│   │   └── ClientService.swift
+│   │   ├── ClientService.swift
+│   │   └── AppointmentService.swift
 │   ├── Design/
 │   │   └── DesignConstants.swift
 │   └── UI/
@@ -330,14 +373,35 @@ Base1/
     │   ├── ClientRowView.swift
     │   └── EmptyClientsView.swift
     ├── Schedule/
-    │   └── Tab2View.swift
+    │   ├── Tab2View.swift
+    │   ├── AddAppointmentView.swift
+    │   ├── AppointmentRowView.swift
+    │   └── EmptyScheduleView.swift
     ├── Projects/
-    │   └── Tab3View.swift
+    │   ├── Tab3View.swift
+    │   ├── AddProjectView.swift
+    │   ├── ProjectRowView.swift
+    │   ├── ProjectDetailView.swift
+    │   ├── AddScopeItemView.swift
+    │   ├── ScopeItemRowView.swift
+    │   └── EmptyProjectsView.swift
     ├── Resources/
-    │   └── Tab4View.swift
+    │   ├── Tab4View.swift
+    │   ├── AddEquipmentView.swift
+    │   ├── AddMaterialView.swift
+    │   ├── AddVehicleView.swift
+    │   ├── AddToolView.swift
+    │   ├── ResourceRowView.swift
+    │   └── EmptyResourcesView.swift
     ├── Finances/
     │   └── Tab5View.swift
     └── Settings/
         ├── SettingsView.swift
-        └── BusinessProfile.swift
+        ├── BusinessProfile.swift
+        ├── MemberRowView.swift
+        ├── InviteMemberView.swift
+        ├── JobTypeListView.swift
+        ├── AddJobTypeView.swift
+        ├── JobTypeDetailView.swift
+        └── AddScopeItemTemplateView.swift
 ```

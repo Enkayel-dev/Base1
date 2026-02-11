@@ -1,0 +1,226 @@
+//
+//  DayTimelineView.swift
+//  Base1
+//
+//  Created by Nicholas Lachapelle on 2026-02-11.
+//
+
+import SwiftUI
+
+struct DayTimelineView: View {
+
+    let appointments: [Appointment]
+    let isToday: Bool
+
+    // MARK: - Constants
+
+    private let hourHeight: CGFloat = 60
+    private let startHour: Int = 6
+    private let endHour: Int = 22
+    private let gutterWidth: CGFloat = 50
+
+    private var totalHours: Int { endHour - startHour }
+    private var totalHeight: CGFloat { CGFloat(totalHours) * hourHeight }
+
+    // MARK: - Body
+
+    var body: some View {
+        GeometryReader { geo in
+            let eventWidth = geo.size.width - gutterWidth - 8
+
+            ScrollView {
+                ZStack(alignment: .topLeading) {
+                    // Hour grid
+                    hourGrid
+
+                    // Event blocks
+                    let layouts = layoutEvents(availableWidth: eventWidth)
+                    ForEach(layouts, id: \.appointment.id) { item in
+                        eventBlock(item: item)
+                            .offset(
+                                x: gutterWidth + 4 + item.xOffset,
+                                y: yPosition(for: item.appointment.startDate)
+                            )
+                    }
+
+                    // Now indicator
+                    if isToday {
+                        nowIndicator
+                    }
+                }
+                .frame(height: totalHeight)
+                .padding(.bottom, 120)
+            }
+        }
+    }
+
+    // MARK: - Hour Grid
+
+    private var hourGrid: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(0..<totalHours, id: \.self) { i in
+                let hour = startHour + i
+                let y = CGFloat(i) * hourHeight
+
+                HStack(alignment: .top, spacing: 4) {
+                    Text(hourLabel(hour))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(width: gutterWidth - 8, alignment: .trailing)
+
+                    Rectangle()
+                        .fill(.secondary.opacity(0.2))
+                        .frame(height: 0.5)
+                        .padding(.top, 6)
+                }
+                .offset(y: y)
+            }
+        }
+    }
+
+    // MARK: - Now Indicator
+
+    private var nowIndicator: some View {
+        let y = yPosition(for: .now)
+        return HStack(spacing: 0) {
+            Circle()
+                .fill(.red)
+                .frame(width: 8, height: 8)
+            Rectangle()
+                .fill(.red)
+                .frame(height: 1)
+        }
+        .offset(x: gutterWidth - 4, y: y - 4)
+    }
+
+    // MARK: - Event Block
+
+    private func eventBlock(item: LayoutItem) -> some View {
+        let height = max(blockHeight(for: item.appointment), 30)
+
+        return HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(typeColor(item.appointment.type).gradient)
+                .frame(width: 4)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.appointment.title)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+
+                if height > 36 {
+                    Text(timeText(item.appointment))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+
+            Spacer(minLength: 0)
+        }
+        .frame(width: item.width, height: height)
+        .background(typeColor(item.appointment.type).opacity(0.15))
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    // MARK: - Layout Algorithm
+
+    private struct LayoutItem {
+        let appointment: Appointment
+        let column: Int
+        let totalColumns: Int
+        let width: CGFloat
+        let xOffset: CGFloat
+    }
+
+    private func layoutEvents(availableWidth: CGFloat) -> [LayoutItem] {
+        let sorted = appointments.sorted { $0.startDate < $1.startDate }
+        guard !sorted.isEmpty else { return [] }
+
+        // Assign columns — greedy column packing
+        var columnEnds: [Date] = []
+        var assignments: [(appointment: Appointment, column: Int)] = []
+
+        for appt in sorted {
+            var placed = false
+            for col in 0..<columnEnds.count {
+                if appt.startDate >= columnEnds[col] {
+                    columnEnds[col] = appt.endDate
+                    assignments.append((appt, col))
+                    placed = true
+                    break
+                }
+            }
+            if !placed {
+                assignments.append((appt, columnEnds.count))
+                columnEnds.append(appt.endDate)
+            }
+        }
+
+        var results: [LayoutItem] = []
+
+        // Find the actual max columns for each overlap cluster
+        for assignment in assignments {
+            // Count how many columns are active during this event's time
+            let overlapping = assignments.filter {
+                $0.appointment.startDate < assignment.appointment.endDate &&
+                $0.appointment.endDate > assignment.appointment.startDate
+            }
+            let colCount = (overlapping.map(\.column).max() ?? 0) + 1
+
+            let eventWidth = availableWidth / CGFloat(colCount)
+            let xOff = CGFloat(assignment.column) * eventWidth
+
+            results.append(LayoutItem(
+                appointment: assignment.appointment,
+                column: assignment.column,
+                totalColumns: colCount,
+                width: eventWidth - 2,
+                xOffset: xOff
+            ))
+        }
+
+        return results
+    }
+
+    // MARK: - Helpers
+
+    private func yPosition(for date: Date) -> CGFloat {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: date)
+        let minute = calendar.component(.minute, from: date)
+        let fractionalHour = CGFloat(hour - startHour) + CGFloat(minute) / 60.0
+        return fractionalHour * hourHeight
+    }
+
+    private func blockHeight(for appointment: Appointment) -> CGFloat {
+        let hours = appointment.duration / 3600
+        return CGFloat(hours) * hourHeight
+    }
+
+    private func hourLabel(_ hour: Int) -> String {
+        let h = hour % 12 == 0 ? 12 : hour % 12
+        let suffix = hour < 12 ? "AM" : "PM"
+        return "\(h) \(suffix)"
+    }
+
+    private func timeText(_ appointment: Appointment) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return "\(formatter.string(from: appointment.startDate)) – \(formatter.string(from: appointment.endDate))"
+    }
+
+    private func typeColor(_ type: AppointmentType) -> Color {
+        switch type {
+        case .consultation: .blue
+        case .siteVisit: .orange
+        case .meeting: .purple
+        case .followUp: .teal
+        case .delivery: .green
+        }
+    }
+}
