@@ -25,7 +25,14 @@ struct AddJobTypeView: View {
     ]
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Job Type",
+                leadingAction: { dismiss() },
+                trailingAction: { save() },
+                isTrailingDisabled: name.isEmpty
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     sectionCard {
@@ -58,18 +65,8 @@ struct AddJobTypeView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Add Job Type")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.isEmpty)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {

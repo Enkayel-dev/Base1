@@ -51,7 +51,14 @@ struct AddProjectView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Project",
+                leadingAction: { dismiss() },
+                trailingAction: { saveProject() },
+                isTrailingDisabled: !canSave
+            )
+
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
@@ -67,18 +74,8 @@ struct AddProjectView: View {
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Project")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveProject() }
-                        .disabled(!canSave)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - Client Section
@@ -277,14 +274,25 @@ struct AddProjectView: View {
         for template in jobType.scopeItemTemplates {
             let scopeItem = ScopeItem(
                 businessKey: businessKey,
-                quantityNeeded: template.defaultQuantity,
                 laborHours: template.defaultLaborHours,
+                fixedCost: template.defaultFixedCost,
                 costMarkup: template.defaultCostMarkup,
                 description: template.name
             )
-            scopeItem.resource = template.resource
             scopeItem.project = project
             modelContext.insert(scopeItem)
+
+            if let resource = template.resource {
+                let unit = template.defaultUnit ?? resource.unit
+                let sir = ScopeItemResource(
+                    businessKey: businessKey,
+                    quantity: template.defaultQuantity,
+                    unit: unit
+                )
+                sir.resource = resource
+                sir.scopeItem = scopeItem
+                modelContext.insert(sir)
+            }
         }
 
         modelContext.insert(project)

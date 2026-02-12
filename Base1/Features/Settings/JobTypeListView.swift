@@ -21,7 +21,14 @@ struct JobTypeListView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Job Types",
+                leadingText: "Back",
+                leadingAction: { drawerRouter.dismiss() },
+                trailingAction: { drawerRouter.present(.addJobType) }
+            )
+
             ScrollView {
                 VStack(spacing: 12) {
                     if businessJobTypes.isEmpty {
@@ -76,17 +83,7 @@ struct JobTypeListView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Job Types")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        drawerRouter.present(.addJobType)
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                }
-            }
         }
+        .background(Color.clear)
     }
 }

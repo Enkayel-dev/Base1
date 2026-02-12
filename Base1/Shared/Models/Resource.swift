@@ -18,8 +18,8 @@ public final class Resource {
     public var resourceDescription: String?
     public var categoryRaw: String
     public var unitCost: Decimal?
-    public var quantity: Int
-    public var unit: String?
+    public var quantity: Decimal
+    public var unitRaw: String
     public var isAvailable: Bool
     public var notes: String?
 
@@ -50,8 +50,8 @@ public final class Resource {
     public var business: Business?
     public var projects: [Project] = []
 
-    @Relationship(deleteRule: .nullify, inverse: \ScopeItem.resource)
-    public var scopeItems: [ScopeItem] = []
+    @Relationship(deleteRule: .nullify, inverse: \ScopeItemResource.resource)
+    public var scopeItemResources: [ScopeItemResource] = []
 
     // MARK: - Equipment Relationships
 
@@ -81,20 +81,25 @@ public final class Resource {
         set { categoryRaw = newValue.rawValue }
     }
 
+    public var unit: UnitOfMeasure {
+        get { UnitOfMeasure(rawValue: unitRaw) ?? .each }
+        set { unitRaw = newValue.rawValue }
+    }
+
     public var totalValue: Decimal? {
         guard let unitCost else { return nil }
-        return unitCost * Decimal(quantity)
+        return unitCost * quantity
     }
 
     public var assignedProjectCount: Int {
         projects.count
     }
 
-    public var allocatedQuantity: Int {
-        scopeItems.reduce(0) { $0 + $1.quantityNeeded }
+    public var allocatedQuantity: Decimal {
+        scopeItemResources.reduce(Decimal.zero) { $0 + $1.quantity }
     }
 
-    public var availableQuantity: Int {
+    public var availableQuantity: Decimal {
         quantity - allocatedQuantity
     }
 
@@ -124,8 +129,8 @@ public final class Resource {
         description: String? = nil,
         category: ResourceCategory = .equipment,
         unitCost: Decimal? = nil,
-        quantity: Int = 1,
-        unit: String? = nil,
+        quantity: Decimal = 1,
+        unit: UnitOfMeasure = .each,
         isAvailable: Bool = true,
         materialTypeName: String? = nil,
         variantLabel: String? = nil,
@@ -141,7 +146,7 @@ public final class Resource {
         self.categoryRaw = category.rawValue
         self.unitCost = unitCost
         self.quantity = quantity
-        self.unit = unit
+        self.unitRaw = unit.rawValue
         self.isAvailable = isAvailable
         self.materialTypeName = materialTypeName
         self.variantLabel = variantLabel

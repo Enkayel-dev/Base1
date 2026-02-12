@@ -15,9 +15,11 @@ public final class ScopeItemTemplate {
 
     public var businessKey: String
     public var name: String
-    public var defaultQuantity: Int
+    public var defaultQuantity: Decimal
     public var defaultLaborHours: Decimal?
+    public var defaultFixedCost: Decimal?
     public var defaultCostMarkup: Decimal?
+    public var defaultUnitRaw: String?
     public var notes: String?
     public var createdAt: Date
 
@@ -27,20 +29,34 @@ public final class ScopeItemTemplate {
     public var business: Business?
     public var jobType: JobType?
 
+    // MARK: - Computed
+
+    public var defaultUnit: UnitOfMeasure? {
+        get {
+            guard let raw = defaultUnitRaw else { return nil }
+            return UnitOfMeasure(rawValue: raw)
+        }
+        set { defaultUnitRaw = newValue?.rawValue }
+    }
+
     // MARK: - Init
 
     public init(
         businessKey: String,
         name: String,
-        defaultQuantity: Int = 1,
+        defaultQuantity: Decimal = 1,
         defaultLaborHours: Decimal? = nil,
-        defaultCostMarkup: Decimal? = nil
+        defaultFixedCost: Decimal? = nil,
+        defaultCostMarkup: Decimal? = nil,
+        defaultUnit: UnitOfMeasure? = nil
     ) {
         self.businessKey = businessKey
         self.name = name
         self.defaultQuantity = defaultQuantity
         self.defaultLaborHours = defaultLaborHours
+        self.defaultFixedCost = defaultFixedCost
         self.defaultCostMarkup = defaultCostMarkup
+        self.defaultUnitRaw = defaultUnit?.rawValue
         self.createdAt = .now
     }
 }

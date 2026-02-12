@@ -14,7 +14,15 @@ struct ProjectDetailView: View {
     @Environment(DrawerRouter.self) private var drawerRouter
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: project.title,
+                leadingText: "Back",
+                leadingAction: { drawerRouter.dismiss() },
+                trailingText: nil,
+                trailingAction: nil
+            )
+
             ScrollView {
                 VStack(spacing: 20) {
                     projectHeader
@@ -25,9 +33,8 @@ struct ProjectDetailView: View {
                 .padding()
                 .padding(.bottom, 40)
             }
-            .navigationTitle(project.title)
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .background(Color.clear)
     }
 
     // MARK: - Project Header
@@ -134,7 +141,7 @@ struct ProjectDetailView: View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 summaryCard(
-                    title: "Scope Cost",
+                    title: "Total Cost",
                     value: formatCurrency(project.totalScopeCost),
                     icon: "dollarsign.circle"
                 )
@@ -143,6 +150,28 @@ struct ProjectDetailView: View {
                     title: "Labor Hours",
                     value: "\(project.totalLaborHours as NSDecimalNumber)h",
                     icon: "clock"
+                )
+            }
+
+            HStack(spacing: 12) {
+                summaryCard(
+                    title: "Materials",
+                    value: formatCurrency(project.totalMaterialCost),
+                    icon: "shippingbox"
+                )
+
+                summaryCard(
+                    title: "Labor",
+                    value: formatCurrency(project.totalLaborCost),
+                    icon: "person"
+                )
+            }
+
+            if project.totalFixedCost > 0 {
+                summaryCard(
+                    title: "Fixed Costs",
+                    value: formatCurrency(project.totalFixedCost),
+                    icon: "dollarsign"
                 )
             }
 

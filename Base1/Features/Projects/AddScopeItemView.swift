@@ -17,31 +17,55 @@ struct AddScopeItemView: View {
 
     // MARK: - Form Fields
 
-    @State private var selectedResource: Resource?
-    @State private var quantityNeeded = ""
-    @State private var laborHours = ""
-    @State private var costMarkup = ""
     @State private var itemDescription = ""
+    @State private var laborHours = ""
+    @State private var fixedCost = ""
+    @State private var costMarkup = ""
     @State private var status: ScopeItemStatus = .pending
     @State private var notes = ""
+    @State private var selectedMember: Member?
+
+    // MARK: - Resource Entries
+
+    @State private var resourceEntries: [ResourceEntry] = []
+    @State private var pendingResource: Resource?
+    @State private var pendingQuantity = ""
+    @State private var pendingUnit: UnitOfMeasure = .each
 
     // MARK: - Queries
 
     @Query(sort: \Resource.name)
     private var allResources: [Resource]
 
+    @Query(sort: \Member.displayName)
+    private var allMembers: [Member]
+
     private var businessResources: [Resource] {
         guard let key = businessManager.businessKey else { return [] }
         return allResources.filter { $0.businessKey == key }
     }
 
+    private var businessMembers: [Member] {
+        guard let key = businessManager.businessKey else { return [] }
+        return allMembers.filter { $0.businessKey == key }
+    }
+
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Scope Item",
+                leadingAction: { dismiss() },
+                trailingAction: { saveScopeItem() },
+                isTrailingDisabled: !canSave
+            )
+
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        resourceSection
-                        quantitySection
+                        descriptionSection
+                        resourcesSection
+                        laborSection
+                        fixedCostSection
                         costSection
                         detailsSection
                     }
@@ -49,40 +73,117 @@ struct AddScopeItemView: View {
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Scope Item")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveScopeItem() }
-                        .disabled(selectedResource == nil || quantityNeeded.isEmpty)
-                }
+        }
+        .background(Color.clear)
+    }
+
+    private var canSave: Bool {
+        !itemDescription.isEmpty || !resourceEntries.isEmpty || !fixedCost.isEmpty || !laborHours.isEmpty
+    }
+
+    // MARK: - Description Section
+
+    private var descriptionSection: some View {
+        sectionCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Description", systemImage: "note.text")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: $itemDescription)
+                    .frame(minHeight: 60)
+                    .scrollContentBackground(.hidden)
             }
         }
     }
 
-    // MARK: - Resource Section
+    // MARK: - Resources Section
 
-    private var resourceSection: some View {
+    private var resourcesSection: some View {
         sectionCard {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Resource", systemImage: "shippingbox")
+                Label("Resources", systemImage: "shippingbox")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker("Resource", selection: $selectedResource) {
-                    Text("Select Resource").tag(Resource?.none)
-                    ForEach(businessResources) { resource in
-                        Label(resource.name, systemImage: resource.category.systemImage)
-                            .tag(Resource?.some(resource))
+
+                // Existing entries
+                ForEach(resourceEntries.indices, id: \.self) { index in
+                    let entry = resourceEntries[index]
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.resource.name)
+                                .font(.subheadline)
+                            Text("\(entry.quantity as NSDecimalNumber) \(entry.unit.abbreviation)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            if let unitCost = entry.resource.unitCost {
+                                Text("Cost: \(formatCurrency(entry.quantity * unitCost))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Button {
+                            resourceEntries.remove(at: index)
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .foregroundStyle(.red)
+                        }
+                    }
+
+                    if index < resourceEntries.count - 1 {
+                        Divider()
                     }
                 }
-                .pickerStyle(.menu)
 
-                if let res = selectedResource {
+                if !resourceEntries.isEmpty {
+                    Divider()
+                }
+
+                // Add resource row
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("Resource", selection: $pendingResource) {
+                        Text("Select Resource").tag(Resource?.none)
+                        ForEach(businessResources) { resource in
+                            Label(resource.name, systemImage: resource.category.systemImage)
+                                .tag(Resource?.some(resource))
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    if pendingResource != nil {
+                        HStack(spacing: 12) {
+                            LabeledTextField("Qty", text: $pendingQuantity, icon: "number", keyboardType: .decimalPad)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Unit")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Picker("Unit", selection: $pendingUnit) {
+                                    ForEach(UnitOfMeasure.grouped(), id: \.category) { group in
+                                        Section(group.category.displayTitle) {
+                                            ForEach(group.units) { unit in
+                                                Text(unit.displayTitle).tag(unit)
+                                            }
+                                        }
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+                        }
+
+                        Button {
+                            addResourceEntry()
+                        } label: {
+                            Label("Add Resource", systemImage: "plus.circle.fill")
+                                .font(.subheadline)
+                        }
+                        .disabled(pendingQuantity.isEmpty)
+                    }
+                }
+
+                if let res = pendingResource {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Available: \(res.availableQuantity) \(res.unit ?? "units")")
+                        Text("Available: \(res.availableQuantity as NSDecimalNumber) \(res.unit.abbreviation)")
                             .font(.caption)
                             .foregroundStyle(res.availableQuantity > 0 ? Color.secondary : Color.orange)
                         if let cost = res.unitCost {
@@ -97,15 +198,56 @@ struct AddScopeItemView: View {
         }
     }
 
-    // MARK: - Quantity Section
+    // MARK: - Labor Section
 
-    private var quantitySection: some View {
+    private var laborSection: some View {
         sectionCard {
-            LabeledTextField("Quantity Needed", text: $quantityNeeded, icon: "number", keyboardType: .numberPad)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Labor", systemImage: "person.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("Assigned Member", selection: $selectedMember) {
+                    Text("None").tag(Member?.none)
+                    ForEach(businessMembers) { member in
+                        HStack {
+                            Text(member.displayName)
+                            if let rate = member.hourlyRate {
+                                Text("(\(formatCurrency(rate))/hr)")
+                            }
+                        }
+                        .tag(Member?.some(member))
+                    }
+                }
+                .pickerStyle(.menu)
+            }
 
             Divider()
 
             LabeledTextField("Labor Hours", text: $laborHours, icon: "clock", keyboardType: .decimalPad)
+
+            if let hours = Decimal(string: laborHours),
+               let rate = selectedMember?.hourlyRate {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Labor Cost", systemImage: "dollarsign.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(formatCurrency(hours * rate))
+                        .font(.headline)
+                }
+            }
+        }
+    }
+
+    // MARK: - Fixed Cost Section
+
+    private var fixedCostSection: some View {
+        sectionCard {
+            LabeledTextField("Fixed Cost", text: $fixedCost, icon: "dollarsign", keyboardType: .decimalPad)
+
+            Text("For permits, subcontractor quotes, disposal fees, etc.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -115,22 +257,14 @@ struct AddScopeItemView: View {
         sectionCard {
             LabeledTextField("Cost Markup (%)", text: $costMarkup, icon: "percent", keyboardType: .decimalPad)
 
-            if let qty = Int(quantityNeeded),
-               let res = selectedResource,
-               let unitCost = res.unitCost {
-                let baseCost = unitCost * Decimal(qty)
-                let markup = Decimal(string: costMarkup) ?? 0
-                let total = baseCost * (1 + (markup / 100))
+            Divider()
 
-                Divider()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("Estimated Cost", systemImage: "dollarsign.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(formatCurrency(total))
-                        .font(.headline)
-                }
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Estimated Total", systemImage: "dollarsign.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(formatCurrency(calculatedTotal))
+                    .font(.headline)
             }
         }
     }
@@ -149,17 +283,6 @@ struct AddScopeItemView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Description (Optional)", systemImage: "note.text")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                TextEditor(text: $itemDescription)
-                    .frame(minHeight: 60)
-                    .scrollContentBackground(.hidden)
             }
 
             Divider()
@@ -186,28 +309,72 @@ struct AddScopeItemView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
+    // MARK: - Calculated Total
+
+    private var calculatedTotal: Decimal {
+        let materialTotal = resourceEntries.reduce(Decimal.zero) { sum, entry in
+            if let cost = entry.resource.unitCost {
+                return sum + (entry.quantity * cost)
+            }
+            return sum
+        }
+
+        let laborTotal: Decimal = {
+            guard let hours = Decimal(string: laborHours),
+                  let rate = selectedMember?.hourlyRate else { return .zero }
+            return hours * rate
+        }()
+
+        let fixed = Decimal(string: fixedCost) ?? .zero
+        let subtotal = materialTotal + laborTotal + fixed
+        let markup = Decimal(string: costMarkup) ?? 0
+        return subtotal * (1 + (markup / 100))
+    }
+
+    // MARK: - Add Resource Entry
+
+    private func addResourceEntry() {
+        guard let resource = pendingResource,
+              let qty = Decimal(string: pendingQuantity) else { return }
+
+        resourceEntries.append(ResourceEntry(resource: resource, quantity: qty, unit: pendingUnit))
+        pendingResource = nil
+        pendingQuantity = ""
+        pendingUnit = .each
+    }
+
     // MARK: - Save
 
     private func saveScopeItem() {
-        guard let businessKey = businessManager.businessKey,
-              let resource = selectedResource,
-              let qty = Int(quantityNeeded) else { return }
+        guard let businessKey = businessManager.businessKey else { return }
 
         let markupDecimal: Decimal? = Decimal(string: costMarkup).map { $0 / 100 }
 
         let scopeItem = ScopeItem(
             businessKey: businessKey,
-            quantityNeeded: qty,
             laborHours: Decimal(string: laborHours),
+            fixedCost: Decimal(string: fixedCost),
             costMarkup: markupDecimal,
             description: itemDescription.isEmpty ? nil : itemDescription,
             status: status
         )
         scopeItem.notes = notes.isEmpty ? nil : notes
         scopeItem.project = project
-        scopeItem.resource = resource
+        scopeItem.assignedMember = selectedMember
 
         modelContext.insert(scopeItem)
+
+        for entry in resourceEntries {
+            let sir = ScopeItemResource(
+                businessKey: businessKey,
+                quantity: entry.quantity,
+                unit: entry.unit
+            )
+            sir.resource = entry.resource
+            sir.scopeItem = scopeItem
+            modelContext.insert(sir)
+        }
+
         dismiss()
     }
 
@@ -218,4 +385,13 @@ struct AddScopeItemView: View {
         formatter.numberStyle = .currency
         return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
     }
+}
+
+// MARK: - Resource Entry
+
+private struct ResourceEntry: Identifiable {
+    let id = UUID()
+    let resource: Resource
+    let quantity: Decimal
+    let unit: UnitOfMeasure
 }

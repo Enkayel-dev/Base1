@@ -30,7 +30,7 @@ struct ResourceRowView: View {
 
                 if resource.allocatedQuantity > 0 {
                     Label(
-                        "\(resource.allocatedQuantity) allocated · \(resource.availableQuantity) available",
+                        "\(resource.allocatedQuantity as NSDecimalNumber) allocated · \(resource.availableQuantity as NSDecimalNumber) available",
                         systemImage: "chart.bar.fill"
                     )
                     .font(.caption2)
@@ -120,7 +120,7 @@ struct ResourceRowView: View {
                 }
 
                 HStack(spacing: 8) {
-                    Label("\(resource.quantity) \(resource.unit ?? "units")", systemImage: "number")
+                    Label("\(resource.quantity as NSDecimalNumber) \(resource.unit.abbreviation)", systemImage: "number")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -132,7 +132,7 @@ struct ResourceRowView: View {
                 }
             } else {
                 HStack(spacing: 8) {
-                    Label("\(resource.quantity) \(resource.unit ?? "units")", systemImage: "number")
+                    Label("\(resource.quantity as NSDecimalNumber) \(resource.unit.abbreviation)", systemImage: "number")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -201,7 +201,15 @@ struct MaterialVariantsSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: materialType.materialTypeName ?? materialType.name,
+                leadingText: "Back",
+                leadingAction: { dismiss() },
+                trailingText: "Done",
+                trailingAction: { dismiss() }
+            )
+
             ScrollView {
                 VStack(spacing: 12) {
                     if sortedVariants.isEmpty {
@@ -227,14 +235,8 @@ struct MaterialVariantsSheet: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle(materialType.materialTypeName ?? materialType.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     private func variantRow(_ variant: Resource) -> some View {
@@ -248,7 +250,7 @@ struct MaterialVariantsSheet: View {
                     .font(.headline)
 
                 HStack(spacing: 8) {
-                    Label("\(variant.quantity) \(variant.unit ?? "units")", systemImage: "number")
+                    Label("\(variant.quantity as NSDecimalNumber) \(variant.unit.abbreviation)", systemImage: "number")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -261,7 +263,7 @@ struct MaterialVariantsSheet: View {
 
                 if variant.allocatedQuantity > 0 {
                     Label(
-                        "\(variant.allocatedQuantity) allocated · \(variant.availableQuantity) available",
+                        "\(variant.allocatedQuantity as NSDecimalNumber) allocated · \(variant.availableQuantity as NSDecimalNumber) available",
                         systemImage: "chart.bar.fill"
                     )
                     .font(.caption2)

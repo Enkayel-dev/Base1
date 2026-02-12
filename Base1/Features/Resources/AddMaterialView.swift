@@ -34,7 +34,7 @@ struct AddMaterialView: View {
     @State private var selectedParent: Resource?
     @State private var variantLabel = ""
     @State private var quantity = ""
-    @State private var unit = ""
+    @State private var selectedUnit: UnitOfMeasure = .each
     @State private var unitCost = ""
 
     // MARK: - Queries
@@ -54,7 +54,14 @@ struct AddMaterialView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Material",
+                leadingAction: { dismiss() },
+                trailingAction: { save() },
+                isTrailingDisabled: !canSave
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     // Mode Picker
@@ -77,18 +84,8 @@ struct AddMaterialView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Add Material")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(!canSave)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - New Type Section
@@ -138,11 +135,25 @@ struct AddMaterialView: View {
             }
 
             sectionCard {
-                LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .numberPad)
+                LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .decimalPad)
 
                 Divider()
 
-                LabeledTextField("Unit (e.g. sqft, pcs)", text: $unit, icon: "ruler")
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Unit", systemImage: "ruler")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Picker("Unit", selection: $selectedUnit) {
+                        ForEach(UnitOfMeasure.grouped(), id: \.category) { group in
+                            Section(group.category.displayTitle) {
+                                ForEach(group.units) { unit in
+                                    Text(unit.displayTitle).tag(unit)
+                                }
+                            }
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
 
                 Divider()
 
@@ -185,8 +196,8 @@ struct AddMaterialView: View {
                 name: "\(parent.materialTypeName ?? parent.name) — \(variantLabel)",
                 category: .material,
                 unitCost: Decimal(string: unitCost),
-                quantity: Int(quantity) ?? 1,
-                unit: unit.isEmpty ? nil : unit,
+                quantity: Decimal(string: quantity) ?? 1,
+                unit: selectedUnit,
                 variantLabel: variantLabel
             )
             resource.parentMaterial = parent

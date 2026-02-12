@@ -12,38 +12,54 @@ struct ScopeItemRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Resource category icon
-            if let category = scopeItem.resource?.category {
-                Image(systemName: category.systemImage)
-                    .font(.title3)
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(statusColor.gradient)
-                    .clipShape(Circle())
-            }
+            // Icon based on item type
+            Image(systemName: itemIcon)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(statusColor.gradient)
+                .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(scopeItem.displayName)
                     .font(.headline)
 
+                // Cost breakdown
                 HStack(spacing: 8) {
-                    Label(
-                        "\(scopeItem.quantityNeeded) \(scopeItem.resource?.unit ?? "units")",
-                        systemImage: "number"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    if scopeItem.materialCost > 0 {
+                        Label(formatCurrency(scopeItem.materialCost), systemImage: "shippingbox")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
-                    if let cost = scopeItem.estimatedCost {
-                        Label(formatCurrency(cost), systemImage: "dollarsign")
+                    if let laborCost = scopeItem.laborCost, laborCost > 0 {
+                        Label(formatCurrency(laborCost), systemImage: "person")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let fixedCost = scopeItem.fixedCost, fixedCost > 0 {
+                        Label(formatCurrency(fixedCost), systemImage: "dollarsign")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                if scopeItem.inventoryShortfall > 0 {
+                // Resource count
+                if !scopeItem.scopeItemResources.isEmpty {
+                    let count = scopeItem.scopeItemResources.count
                     Label(
-                        "Need to order: \(scopeItem.inventoryShortfall) more",
+                        "\(count) resource\(count == 1 ? "" : "s")",
+                        systemImage: "cube.box"
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                }
+
+                // Inventory warnings
+                if scopeItem.hasInventoryIssues {
+                    Label(
+                        "Inventory shortfall",
                         systemImage: "exclamationmark.triangle.fill"
                     )
                     .font(.caption2)
@@ -63,8 +79,18 @@ struct ScopeItemRowView: View {
                     .background(statusColor.gradient)
                     .clipShape(Capsule())
 
+                Text(formatCurrency(scopeItem.estimatedCost))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+
                 if let hours = scopeItem.laborHours {
                     Label("\(hours as NSDecimalNumber)h", systemImage: "clock")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let member = scopeItem.assignedMember {
+                    Text(member.initials)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -76,6 +102,15 @@ struct ScopeItemRowView: View {
     }
 
     // MARK: - Helpers
+
+    private var itemIcon: String {
+        if let first = scopeItem.scopeItemResources.first?.resource?.category {
+            return first.systemImage
+        }
+        if scopeItem.laborHours != nil { return "person.fill" }
+        if scopeItem.fixedCost != nil { return "dollarsign.circle" }
+        return "doc.text"
+    }
 
     private var statusColor: Color {
         switch scopeItem.status {

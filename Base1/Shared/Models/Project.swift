@@ -72,15 +72,27 @@ public final class Project {
     }
 
     public var totalScopeCost: Decimal {
-        scopeItems.compactMap { $0.estimatedCost }.reduce(Decimal.zero, +)
+        scopeItems.reduce(Decimal.zero) { $0 + $1.estimatedCost }
+    }
+
+    public var totalMaterialCost: Decimal {
+        scopeItems.reduce(Decimal.zero) { $0 + $1.materialCost }
+    }
+
+    public var totalLaborCost: Decimal {
+        scopeItems.compactMap { $0.laborCost }.reduce(Decimal.zero, +)
     }
 
     public var totalLaborHours: Decimal {
         scopeItems.compactMap { $0.laborHours }.reduce(Decimal.zero, +)
     }
 
+    public var totalFixedCost: Decimal {
+        scopeItems.compactMap { $0.fixedCost }.reduce(Decimal.zero, +)
+    }
+
     public var hasInventoryIssues: Bool {
-        scopeItems.contains { $0.inventoryShortfall > 0 }
+        scopeItems.contains { $0.hasInventoryIssues }
     }
 
     // MARK: - Init

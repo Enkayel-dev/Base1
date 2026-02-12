@@ -9,6 +9,9 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 - **NEVER move files between folders** without explicit user instruction.
 - **Read before writing.** Always read a file's current contents before modifying it.
 - **Preserve the architecture.** Shared Models go in `Shared/Models/`, Shared Services in `Shared/Services/`, Feature-specific files go in `Features/<FeatureName>/`.
+- **NEVER attempt to build the project.** Do not run `xcodebuild` or any build commands. The user handles builds in Xcode.
+- **NEVER act on diagnostics/warnings** unless the user explicitly mentions them. Ignore SourceKit diagnostics, linter warnings, and similar automated messages.
+- **Always update CLAUDE.md** when completing tasks that change architecture, add files, or establish new patterns.
 
 ## Build & Run
 - **Platform:** iOS (SwiftUI, SwiftData)
@@ -312,7 +315,7 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `LabeledTextField.swift` | `LabeledTextField` | Shared labeled text field with icon + keyboard type |
 | `BindingExtensions.swift` | `Binding<String?>.orEmpty` | Optional string binding helper |
 | `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control — reusable across any feature with a `Filterable` enum |
-| `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Used by `MainTabView` to render content from `DrawerRouter`. Content views use `@Environment(\.dismissDrawer)` to dismiss |
+| `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction`, `NavigationBackgroundCleaner` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Includes `NavigationBackgroundCleaner` (UIViewRepresentable) that walks the responder chain to clear `NavigationStack`'s opaque background so the material shows through. Used by `MainTabView` to render content from `DrawerRouter`. Content views use `@Environment(\.dismissDrawer)` to dismiss |
 
 #### Design System (`Shared/Design/`)
 | File | Type | Purpose |

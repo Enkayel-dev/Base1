@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 // MARK: - Drawer Dismiss Environment Key
 
@@ -81,6 +80,7 @@ struct SideDrawer<Content: View>: View {
                         onDismiss()
                     }
                 })
+                .scrollContentBackground(.hidden)
                 .frame(width: drawerWidth)
                 .frame(maxHeight: .infinity)
                 .clipped()

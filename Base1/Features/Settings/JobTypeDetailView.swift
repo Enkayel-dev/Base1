@@ -15,7 +15,15 @@ struct JobTypeDetailView: View {
     @Environment(DrawerRouter.self) private var drawerRouter
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: jobType.name,
+                leadingText: "Back",
+                leadingAction: { drawerRouter.dismiss() },
+                trailingText: nil,
+                trailingAction: nil
+            )
+
             ScrollView {
                 VStack(spacing: 12) {
                     // Header
@@ -71,9 +79,8 @@ struct JobTypeDetailView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Job Type")
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .background(Color.clear)
     }
 
     private func scopeTemplateRow(_ template: ScopeItemTemplate) -> some View {
@@ -90,7 +97,7 @@ struct JobTypeDetailView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text("Qty: \(template.defaultQuantity)")
+                    Text("Qty: \(template.defaultQuantity as NSDecimalNumber)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

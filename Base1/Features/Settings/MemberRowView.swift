@@ -28,9 +28,20 @@ struct MemberRowView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
 
-                Text(member.email)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text(member.email)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let rate = member.hourlyRate {
+                        Text("·")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("\(rate as NSDecimalNumber)/hr")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Spacer()

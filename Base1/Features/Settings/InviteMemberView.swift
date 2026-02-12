@@ -17,9 +17,18 @@ struct InviteMemberView: View {
     @State private var email = ""
     @State private var displayName = ""
     @State private var role: MemberRole = .member
+    @State private var hourlyRate = ""
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Invite Member",
+                leadingAction: { dismiss() },
+                trailingText: "Send Invite",
+                trailingAction: { saveMember() },
+                isTrailingDisabled: email.isEmpty || displayName.isEmpty
+            )
+
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
@@ -42,24 +51,18 @@ struct InviteMemberView: View {
                                 }
                                 .pickerStyle(.segmented)
                             }
+
+                            Divider()
+
+                            LabeledTextField("Hourly Rate", text: $hourlyRate, icon: "dollarsign", keyboardType: .decimalPad)
                         }
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Invite Member")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Send Invite") { saveMember() }
-                        .disabled(email.isEmpty || displayName.isEmpty)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -79,7 +82,8 @@ struct InviteMemberView: View {
             email: email,
             displayName: displayName,
             role: role,
-            inviteStatus: .pending
+            inviteStatus: .pending,
+            hourlyRate: Decimal(string: hourlyRate)
         )
         member.business = businessManager.currentBusiness
 

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import UIKit
 
 struct AddClientView: View {
 
@@ -28,7 +27,14 @@ struct AddClientView: View {
     @State private var notes = ""
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Client",
+                leadingAction: { dismiss() },
+                trailingAction: { saveClient() },
+                isTrailingDisabled: firstName.isEmpty || lastName.isEmpty
+            )
+
             VStack(spacing: 20) {
                 // MARK: - Source Picker
                 sourcePicker
@@ -48,20 +54,13 @@ struct AddClientView: View {
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Client")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if selectedSource == .manual {
-                        Button("Save") { saveClient() }
-                            .disabled(firstName.isEmpty || lastName.isEmpty)
-                    }
-                }
-            }
         }
+        .background {
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.15), radius: 30, x: 0, y: 10)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     // MARK: - Source Picker

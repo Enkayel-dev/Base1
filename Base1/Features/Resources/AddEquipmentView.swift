@@ -19,7 +19,7 @@ struct AddEquipmentView: View {
     @State private var name = ""
     @State private var resourceDescription = ""
     @State private var quantity = ""
-    @State private var unit = ""
+    @State private var selectedUnit: UnitOfMeasure = .each
     @State private var unitCost = ""
     @State private var isAvailable = true
     @State private var notes = ""
@@ -33,7 +33,14 @@ struct AddEquipmentView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Equipment",
+                leadingAction: { dismiss() },
+                trailingAction: { save() },
+                isTrailingDisabled: name.isEmpty
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     detailsSection
@@ -44,18 +51,8 @@ struct AddEquipmentView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Add Equipment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.isEmpty)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - Details Section
@@ -125,11 +122,25 @@ struct AddEquipmentView: View {
 
     private var inventorySection: some View {
         sectionCard {
-            LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .numberPad)
+            LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .decimalPad)
 
             Divider()
 
-            LabeledTextField("Unit (e.g. pcs)", text: $unit, icon: "ruler")
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Unit", systemImage: "ruler")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Unit", selection: $selectedUnit) {
+                    ForEach(UnitOfMeasure.grouped(), id: \.category) { group in
+                        Section(group.category.displayTitle) {
+                            ForEach(group.units) { unit in
+                                Text(unit.displayTitle).tag(unit)
+                            }
+                        }
+                    }
+                }
+                .pickerStyle(.menu)
+            }
 
             Divider()
 
@@ -180,8 +191,8 @@ struct AddEquipmentView: View {
             description: resourceDescription.isEmpty ? nil : resourceDescription,
             category: .equipment,
             unitCost: Decimal(string: unitCost),
-            quantity: Int(quantity) ?? 1,
-            unit: unit.isEmpty ? nil : unit,
+            quantity: Decimal(string: quantity) ?? 1,
+            unit: selectedUnit,
             isAvailable: isAvailable
         )
         resource.notes = notes.isEmpty ? nil : notes

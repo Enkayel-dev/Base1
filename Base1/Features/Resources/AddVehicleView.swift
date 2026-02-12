@@ -24,7 +24,14 @@ struct AddVehicleView: View {
     @State private var isAvailable = true
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Vehicle",
+                leadingAction: { dismiss() },
+                trailingAction: { save() },
+                isTrailingDisabled: name.isEmpty
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     detailsSection
@@ -33,18 +40,8 @@ struct AddVehicleView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Add Vehicle")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.isEmpty)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - Details Section

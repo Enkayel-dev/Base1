@@ -40,7 +40,14 @@ struct AddToolView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Tool",
+                leadingAction: { dismiss() },
+                trailingAction: { save() },
+                isTrailingDisabled: name.isEmpty
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     detailsSection
@@ -50,18 +57,8 @@ struct AddToolView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("Add Tool")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(name.isEmpty)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - Details Section
@@ -72,7 +69,7 @@ struct AddToolView: View {
 
             Divider()
 
-            LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .numberPad)
+            LabeledTextField("Quantity", text: $quantity, icon: "number", keyboardType: .decimalPad)
         }
     }
 
@@ -156,7 +153,7 @@ struct AddToolView: View {
             businessKey: businessKey,
             name: name,
             category: .tool,
-            quantity: Int(quantity) ?? 1,
+            quantity: Decimal(string: quantity) ?? 1,
             isShopTool: locationChoice == .shop
         )
         resource.notes = notes.isEmpty ? nil : notes

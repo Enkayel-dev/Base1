@@ -18,6 +18,7 @@ public final class Member {
     public var displayName: String
     public var roleRaw: String
     public var inviteStatusRaw: String
+    public var hourlyRate: Decimal?
     public var invitedAt: Date
     public var acceptedAt: Date?
     public var createdAt: Date
@@ -29,6 +30,9 @@ public final class Member {
 
     @Relationship(inverse: \Project.assignedMembers)
     public var assignedProjects: [Project] = []
+
+    @Relationship(inverse: \ScopeItem.assignedMember)
+    public var assignedScopeItems: [ScopeItem] = []
 
     // MARK: - Computed
 
@@ -57,13 +61,15 @@ public final class Member {
         email: String,
         displayName: String,
         role: MemberRole = .member,
-        inviteStatus: InviteStatus = .pending
+        inviteStatus: InviteStatus = .pending,
+        hourlyRate: Decimal? = nil
     ) {
         self.businessKey = businessKey
         self.email = email
         self.displayName = displayName
         self.roleRaw = role.rawValue
         self.inviteStatusRaw = inviteStatus.rawValue
+        self.hourlyRate = hourlyRate
         self.invitedAt = .now
         self.createdAt = .now
         self.updatedAt = .now

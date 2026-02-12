@@ -130,7 +130,7 @@ extension Resource {
             category: .material,
             unitCost: 2.50,
             quantity: 50,
-            unit: "sheets",
+            unit: .each,
             variantLabel: "40 grit"
         )
         sandpaper40.parentMaterial = sandpaperType
@@ -141,7 +141,7 @@ extension Resource {
             category: .material,
             unitCost: 2.50,
             quantity: 30,
-            unit: "sheets",
+            unit: .each,
             variantLabel: "60 grit"
         )
         sandpaper60.parentMaterial = sandpaperType
@@ -152,7 +152,7 @@ extension Resource {
             category: .material,
             unitCost: 2.75,
             quantity: 40,
-            unit: "sheets",
+            unit: .each,
             variantLabel: "80 grit"
         )
         sandpaper80.parentMaterial = sandpaperType
@@ -170,7 +170,7 @@ extension Resource {
             category: .material,
             unitCost: 45.00,
             quantity: 10,
-            unit: "gallons",
+            unit: .gallons,
             variantLabel: "Chocolate Brown"
         )
         stainBrown.parentMaterial = stainType
@@ -181,7 +181,7 @@ extension Resource {
             category: .material,
             unitCost: 45.00,
             quantity: 8,
-            unit: "gallons",
+            unit: .gallons,
             variantLabel: "Red Cedar"
         )
         stainCedar.parentMaterial = stainType
@@ -193,7 +193,7 @@ extension Resource {
             category: .material,
             unitCost: 3.50,
             quantity: 200,
-            unit: "sqft"
+            unit: .sqft
         )
 
         // Vehicle
@@ -241,33 +241,55 @@ extension Resource {
 // MARK: - Sample Scope Items
 
 extension ScopeItem {
-    static func sampleScopeItems(businessKey: String, projects: [Project], resources: [Resource]) -> [ScopeItem] {
-        guard projects.count >= 3, resources.count >= 9 else { return [] }
+    static func sampleScopeItems(businessKey: String, projects: [Project], resources: [Resource], members: [Member]) -> [ScopeItem] {
+        guard projects.count >= 3, resources.count >= 9, members.count >= 3 else { return [] }
 
-        // resources[8] = Ceramic Tile
+        // Tile installation — material + labor
         let item1 = ScopeItem(
             businessKey: businessKey,
-            quantityNeeded: 150,
             laborHours: 12.0,
             costMarkup: 0.15,
             description: "White ceramic tile for bathroom walls",
             status: .ordered
         )
         item1.project = projects[2]
-        item1.resource = resources[8]
+        item1.assignedMember = members[2]
 
-        // resources[0] = Table Saw
+        let item1Resource = ScopeItemResource(
+            businessKey: businessKey,
+            quantity: 150,
+            unit: .sqft
+        )
+        item1Resource.resource = resources[8] // Ceramic Tile
+        item1Resource.scopeItem = item1
+
+        // Cabinet cuts — equipment + labor
         let item2 = ScopeItem(
             businessKey: businessKey,
-            quantityNeeded: 1,
             laborHours: 4.0,
             description: "Table saw for cabinet cuts",
             status: .fulfilled
         )
         item2.project = projects[0]
-        item2.resource = resources[0]
+        item2.assignedMember = members[1]
+
+        let item2Resource = ScopeItemResource(
+            businessKey: businessKey,
+            quantity: 1,
+            unit: .each
+        )
+        item2Resource.resource = resources[0] // Table Saw
+        item2Resource.scopeItem = item2
 
         return [item1, item2]
+    }
+}
+
+// MARK: - Sample Scope Item Resources
+
+extension ScopeItemResource {
+    static func sampleScopeItemResources(from scopeItems: [ScopeItem]) -> [ScopeItemResource] {
+        scopeItems.flatMap { $0.scopeItemResources }
     }
 }
 
@@ -280,7 +302,8 @@ extension Member {
             email: "nick@tremcon.ca",
             displayName: "Nicholas Lachapelle",
             role: .owner,
-            inviteStatus: .accepted
+            inviteStatus: .accepted,
+            hourlyRate: 95.00
         )
         owner.acceptedAt = .now
 
@@ -289,7 +312,8 @@ extension Member {
             email: "marie@tremcon.ca",
             displayName: "Marie Tremblay",
             role: .admin,
-            inviteStatus: .accepted
+            inviteStatus: .accepted,
+            hourlyRate: 75.00
         )
         admin.acceptedAt = .now.addingTimeInterval(-7 * 86400)
 
@@ -298,7 +322,8 @@ extension Member {
             email: "luc@tremcon.ca",
             displayName: "Luc Bergeron",
             role: .member,
-            inviteStatus: .accepted
+            inviteStatus: .accepted,
+            hourlyRate: 55.00
         )
         member.acceptedAt = .now.addingTimeInterval(-3 * 86400)
 
@@ -307,7 +332,8 @@ extension Member {
             email: "alain@tremcon.ca",
             displayName: "Alain Dubois",
             role: .member,
-            inviteStatus: .pending
+            inviteStatus: .pending,
+            hourlyRate: 45.00
         )
 
         return [owner, admin, member, pending]
@@ -338,7 +364,8 @@ extension ScopeItemTemplate {
             name: "Tile Installation",
             defaultQuantity: 100,
             defaultLaborHours: 8.0,
-            defaultCostMarkup: 0.15
+            defaultCostMarkup: 0.15,
+            defaultUnit: .sqft
         )
         t1.resource = resources[8]
         t1.jobType = jobTypes[0]
@@ -347,7 +374,8 @@ extension ScopeItemTemplate {
             businessKey: businessKey,
             name: "Cabinet Cuts",
             defaultQuantity: 1,
-            defaultLaborHours: 4.0
+            defaultLaborHours: 4.0,
+            defaultUnit: .each
         )
         t2.resource = resources[0]
         t2.jobType = jobTypes[0]
@@ -356,7 +384,8 @@ extension ScopeItemTemplate {
             businessKey: businessKey,
             name: "General Tile Work",
             defaultQuantity: 50,
-            defaultLaborHours: 6.0
+            defaultLaborHours: 6.0,
+            defaultUnit: .sqft
         )
         t3.resource = resources[8]
         t3.jobType = jobTypes[2]
@@ -593,8 +622,11 @@ enum SampleDataContainer {
         }
 
         // Scope Items
-        let scopeItems = ScopeItem.sampleScopeItems(businessKey: bk, projects: projects, resources: resources)
-        scopeItems.forEach { context.insert($0) }
+        let scopeItems = ScopeItem.sampleScopeItems(businessKey: bk, projects: projects, resources: resources, members: members)
+        scopeItems.forEach { scopeItem in
+            context.insert(scopeItem)
+            scopeItem.scopeItemResources.forEach { context.insert($0) }
+        }
 
         // Invoices
         Invoice.sampleInvoices(businessKey: bk, clients: clients, projects: projects)

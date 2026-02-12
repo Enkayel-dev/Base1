@@ -150,7 +150,15 @@ struct ResourceListSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: category.displayTitle,
+                leadingText: "Back",
+                leadingAction: { dismiss() },
+                trailingText: "Done",
+                trailingAction: { dismiss() }
+            )
+
             Group {
                 if resources.isEmpty {
                     EmptyResourcesView()
@@ -166,13 +174,7 @@ struct ResourceListSheet: View {
                     }
                 }
             }
-            .navigationTitle(category.displayTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
+        .background(Color.clear)
     }
 }

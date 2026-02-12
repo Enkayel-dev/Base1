@@ -14,7 +14,15 @@ struct ClientDetailView: View {
     @Environment(\.dismissDrawer) private var dismiss
     
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Client Detail",
+                leadingText: "Back",
+                leadingAction: { dismiss() },
+                trailingText: "Done",
+                trailingAction: { dismiss() }
+            )
+
             ScrollView {
                 VStack(spacing: 24) {
                     headerSection
@@ -32,17 +40,8 @@ struct ClientDetailView: View {
                 .padding()
                 .padding(.bottom, 40)
             }
-            .background(Color.clear)
-            .navigationTitle("Client Detail")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
         }
+        .background(Color.clear)
     }
     
     // MARK: - Header Section

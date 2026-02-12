@@ -52,7 +52,14 @@ struct AddAppointmentView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            DrawerHeader(
+                title: "Add Appointment",
+                leadingAction: { dismiss() },
+                trailingAction: { saveAppointment() },
+                isTrailingDisabled: !canSave
+            )
+
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
@@ -69,18 +76,8 @@ struct AddAppointmentView: View {
                     .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Appointment")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveAppointment() }
-                        .disabled(!canSave)
-                }
-            }
         }
+        .background(Color.clear)
     }
 
     // MARK: - Client Section
