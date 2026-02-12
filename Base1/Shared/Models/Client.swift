@@ -50,6 +50,16 @@ public final class Client {
         "\(firstName) \(lastName)"
     }
 
+    public var name: String { displayName }
+
+    public var initials: String {
+        let parts = displayName.split(separator: " ")
+        if parts.count >= 2 {
+            return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
+        }
+        return String(displayName.prefix(1)).uppercased()
+    }
+
     public var status: ClientStatus {
         get { ClientStatus(rawValue: statusRaw) ?? .lead }
         set { statusRaw = newValue.rawValue }

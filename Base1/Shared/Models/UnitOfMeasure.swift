@@ -103,6 +103,46 @@ public enum UnitOfMeasure: String, Codable, CaseIterable, Identifiable {
             (category: cat, units: allCases.filter { $0.category == cat })
         }
     }
+
+    // MARK: - Conversions
+
+    private var baseFactor: Decimal {
+        switch self {
+        // Length (Base: meters)
+        case .meters: 1
+        case .feet: 0.3048
+        case .inches: 0.0254
+
+        // Area (Base: sqm)
+        case .sqm: 1
+        case .sqft: 0.092903
+
+        // Volume (Base: liters)
+        case .liters: 1
+        case .gallons: 3.78541
+        case .cubicYards: 764.555
+
+        // Weight (Base: kilograms)
+        case .kilograms: 1
+        case .pounds: 0.453592
+        case .tons: 907.185 // US Ton
+
+        // Time (Base: hours)
+        case .hours: 1
+        case .days: 24
+
+        default: 1
+        }
+    }
+
+    public func convert(_ value: Decimal, to other: UnitOfMeasure) -> Decimal? {
+        guard self.category == other.category else { return nil }
+        if self == other { return value }
+
+        // Convert to base unit then to target unit
+        let baseValue = value * self.baseFactor
+        return baseValue / other.baseFactor
+    }
 }
 
 // MARK: - Unit Category

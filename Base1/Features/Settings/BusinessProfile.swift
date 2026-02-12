@@ -57,8 +57,6 @@ struct BusinessProfile: View {
                         // MARK: - Team
                         teamSection(business: business)
 
-                        // MARK: - Job Types & Templates
-                        jobTypesSection
 
                         // MARK: - Business Key
                         VStack(spacing: 4) {
@@ -139,26 +137,6 @@ struct BusinessProfile: View {
         }
     }
 
-    // MARK: - Job Types Section
-
-    private var jobTypesSection: some View {
-        Button {
-            drawerRouter.present(.jobTypeList)
-        } label: {
-            HStack {
-                Label("Job Types & Templates", systemImage: "wrench.and.screwdriver")
-                    .font(.headline)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .background(.thinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .foregroundStyle(.primary)
-    }
 
     // MARK: - Logo Section
 

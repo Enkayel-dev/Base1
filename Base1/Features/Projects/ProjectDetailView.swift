@@ -12,22 +12,33 @@ struct ProjectDetailView: View {
     let project: Project
 
     @Environment(DrawerRouter.self) private var drawerRouter
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismissDrawer) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
             DrawerHeader(
                 title: project.title,
                 leadingText: "Back",
-                leadingAction: { drawerRouter.dismiss() },
+                leadingAction: {
+                    if project.status == .template, let jt = project.jobType, jt.parent == nil {
+                        let service = ProjectService(modelContext: modelContext)
+                        service.syncScopeFromParentToVariants(parentTemplateProject: project)
+                    }
+                    dismiss()
+                },
                 trailingText: nil,
                 trailingAction: nil
             )
 
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     projectHeader
+                    clientSection
                     assignedTeamSection
+                    measurementsSection
                     scopeItemsSection
+                    photosSection
                     summarySection
                 }
                 .padding()
@@ -53,17 +64,11 @@ struct ProjectDetailView: View {
 
                 Spacer()
 
-                if let jobType = project.projectTypeRaw {
-                    Text(jobType)
+                if let jobType = project.jobType {
+                    Text(jobType.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-
-            if let client = project.client {
-                Label(client.displayName, systemImage: "person")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
 
             if let description = project.projectDescription {
@@ -75,6 +80,63 @@ struct ProjectDetailView: View {
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    // MARK: - Client Section
+
+    private var clientSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Client")
+                .font(.headline)
+
+            if let client = project.client {
+                Button {
+                    drawerRouter.present(.clientDetail(client))
+                } label: {
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(.blue.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                            .overlay {
+                                Text(client.initials)
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.blue)
+                            }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(client.name)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            
+                            if let company = client.companyName {
+                                Text(company)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            } else {
+                Text("No client linked")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
     }
 
     // MARK: - Assigned Team Section
@@ -97,6 +159,59 @@ struct ProjectDetailView: View {
                 .padding()
                 .background(.thinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
+    // MARK: - Measurements Section
+
+    private var measurementsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Measurements")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    drawerRouter.present(.addMeasurement(project))
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+
+            if project.measurements.isEmpty {
+                Text("No measurements recorded")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(project.measurements.sorted(by: { $0.createdAt > $1.createdAt })) { m in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(m.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                if let notes = m.notes {
+                                    Text(notes)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                            Text("\(m.value as NSDecimalNumber) \(m.unit.abbreviation)")
+                                .font(.subheadline)
+                                .monospacedDigit()
+                        }
+                        .padding()
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
             }
         }
     }
@@ -130,6 +245,48 @@ struct ProjectDetailView: View {
             } else {
                 ForEach(project.scopeItems.sorted(by: { $0.createdAt > $1.createdAt })) { item in
                     ScopeItemRowView(scopeItem: item)
+                }
+            }
+        }
+    }
+
+    // MARK: - Site Photos Section
+
+    private var photosSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Site Photos")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    drawerRouter.present(.addProjectPhoto(project))
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+
+            if project.photos.isEmpty {
+                Text("No photos uploaded")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(project.photos.sorted(by: { $0.createdAt > $1.createdAt })) { photo in
+                            if let data = photo.imageData, let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 120, height: 120)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -215,6 +372,7 @@ struct ProjectDetailView: View {
         case .onHold: .orange
         case .completed: .purple
         case .cancelled: .red
+        case .template: .teal
         }
     }
 

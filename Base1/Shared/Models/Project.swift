@@ -17,11 +17,9 @@ public final class Project {
     public var title: String
     public var projectDescription: String?
     public var statusRaw: String
-    public var projectTypeRaw: String?
     public var startDate: Date?
     public var dueDate: Date?
     public var completedDate: Date?
-    public var estimatedBudget: Decimal?
     public var notes: String?
 
     public var createdAt: Date
@@ -31,6 +29,7 @@ public final class Project {
 
     public var business: Business?
     public var client: Client?
+    public var jobType: JobType?
 
     @Relationship(deleteRule: .cascade, inverse: \Invoice.project)
     public var invoices: [Invoice] = []
@@ -46,6 +45,12 @@ public final class Project {
 
     @Relationship(deleteRule: .cascade, inverse: \ScopeItem.project)
     public var scopeItems: [ScopeItem] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \ProjectMeasurement.project)
+    public var measurements: [ProjectMeasurement] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \ProjectPhoto.project)
+    public var photos: [ProjectPhoto] = []
 
     public var assignedMembers: [Member] = []
 
@@ -110,7 +115,6 @@ public final class Project {
         self.title = title
         self.projectDescription = description
         self.statusRaw = status.rawValue
-        self.projectTypeRaw = projectType
         self.startDate = startDate
         self.dueDate = dueDate
         self.createdAt = .now
@@ -126,6 +130,7 @@ public enum ProjectStatus: String, Codable, CaseIterable, Identifiable {
     case onHold
     case completed
     case cancelled
+    case template
 
     public var id: String { rawValue }
 
@@ -136,6 +141,7 @@ public enum ProjectStatus: String, Codable, CaseIterable, Identifiable {
         case .onHold: "On Hold"
         case .completed: "Completed"
         case .cancelled: "Cancelled"
+        case .template: "Template"
         }
     }
 }

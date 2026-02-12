@@ -28,6 +28,10 @@ enum DrawerViewFactory {
             ProjectDetailView(project: project)
         case .addScopeItem(let project):
             AddScopeItemView(project: project)
+        case .addMeasurement(let project):
+            AddMeasurementView(project: project)
+        case .addProjectPhoto(let project):
+            AddProjectPhotoView(project: project)
 
         // Resources
         case .addEquipment:
@@ -52,14 +56,6 @@ enum DrawerViewFactory {
         // Settings / Business
         case .inviteMember:
             InviteMemberView()
-        case .jobTypeList:
-            JobTypeListView()
-        case .addJobType:
-            AddJobTypeView()
-        case .jobTypeDetail(let jobType):
-            JobTypeDetailView(jobType: jobType)
-        case .addScopeItemTemplate(let jobType):
-            AddScopeItemTemplateView(jobType: jobType)
         }
     }
 }

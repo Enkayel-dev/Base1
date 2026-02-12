@@ -27,7 +27,7 @@ struct Tab3View: View {
     private var filteredProjects: [Project] {
         switch selectedFilter {
         case .all:
-            return businessProjects
+            return businessProjects.filter { $0.status != .template }
         case .planning:
             return businessProjects.filter { $0.status == .planning }
         case .inProgress:
@@ -36,6 +36,8 @@ struct Tab3View: View {
             return businessProjects.filter { $0.status == .onHold }
         case .completed:
             return businessProjects.filter { $0.status == .completed }
+        case .templates:
+            return businessProjects.filter { $0.status == .template && $0.jobType?.parent == nil }
         }
     }
 

@@ -16,10 +16,9 @@ struct AddProjectView: View {
 
     // MARK: - Form Fields
 
-    @State private var selectedClient: Client?
-    @State private var selectedJobType: JobType?
+    @State private var selectedClientID: PersistentIdentifier?
+    @State private var selectedJobTypeID: PersistentIdentifier?
     @State private var projectDescription = ""
-    @State private var budget = ""
 
     @State private var hasStartDate = false
     @State private var startDate = Date.now
@@ -27,6 +26,21 @@ struct AddProjectView: View {
     @State private var dueDate = Date.now.addingTimeInterval(604800)
 
     @State private var selectedMembers: Set<PersistentIdentifier> = []
+    
+    @State private var isTemplate = false
+    @State private var newJobTypeName = ""
+    
+    // MARK: - Variants
+    
+    struct VariantDraft: Identifiable {
+        let id = UUID()
+        var name: String
+        var description: String
+    }
+    
+    @State private var variants: [VariantDraft] = []
+    @State private var draftVariantName = ""
+    @State private var draftVariantDescription = ""
 
     // MARK: - Queries
 
@@ -42,12 +56,19 @@ struct AddProjectView: View {
     // MARK: - Computed
 
     private var autoTitle: String {
-        guard let jobType = selectedJobType, let client = selectedClient else { return "" }
+        if isTemplate {
+            return newJobTypeName.isEmpty ? "New Template" : newJobTypeName
+        }
+        guard let jobType = allJobTypes.first(where: { $0.persistentModelID == selectedJobTypeID }),
+              let client = allClients.first(where: { $0.persistentModelID == selectedClientID }) else { return "" }
         return "\(jobType.name) for \(client.lastName)"
     }
 
     private var canSave: Bool {
-        selectedClient != nil && selectedJobType != nil
+        if isTemplate {
+            return !newJobTypeName.isEmpty
+        }
+        return selectedClientID != nil && selectedJobTypeID != nil
     }
 
     var body: some View {
@@ -62,13 +83,20 @@ struct AddProjectView: View {
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        clientSection
-                        jobTypeSection
-                        titlePreview
-                        budgetSection
-                        dateSection
-                        descriptionSection
-                        teamSection
+                        templateToggle
+                        
+                        if !isTemplate {
+                            clientSection
+                            jobTypeSection
+                            titlePreview
+                            dateSection
+                            descriptionSection
+                            teamSection
+                        } else {
+                            templateNameSection
+                            variantsSection
+                            descriptionSection
+                        }
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 40)
@@ -76,6 +104,19 @@ struct AddProjectView: View {
             }
         }
         .background(Color.clear)
+    }
+
+    private var templateToggle: some View {
+        sectionCard {
+            Toggle(isOn: $isTemplate) {
+                Label("Make Template", systemImage: "square.stack.3d.up")
+            }
+            .onChange(of: isTemplate) { _, newValue in
+                if newValue {
+                    selectedClientID = nil
+                }
+            }
+        }
     }
 
     // MARK: - Client Section
@@ -86,13 +127,84 @@ struct AddProjectView: View {
                 Label("Client", systemImage: "person")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Picker("Client", selection: $selectedClient) {
-                    Text("Select a client…").tag(Client?.none)
+                Picker("Client", selection: $selectedClientID) {
+                    Text("Select a client…").tag(PersistentIdentifier?.none)
                     ForEach(allClients) { client in
-                        Text(client.displayName).tag(Client?.some(client))
+                        Text(client.displayName).tag(PersistentIdentifier?.some(client.persistentModelID))
                     }
                 }
                 .pickerStyle(.menu)
+                .onChange(of: selectedClientID) { _, newValue in
+                    if newValue != nil {
+                        isTemplate = false
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Template Name Section
+    
+    private var templateNameSection: some View {
+        sectionCard {
+            VStack(alignment: .leading, spacing: 12) {
+                LabeledTextField("Job Type Name", text: $newJobTypeName, icon: "hammer")
+            }
+        }
+    }
+    // MARK: - Variants Section
+    
+    private var variantsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Variants", systemImage: "square.stack.3d.down.right")
+                .font(.headline)
+            
+            if !variants.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(variants) { variant in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(variant.name)
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                if !variant.description.isEmpty {
+                                    Text(variant.description)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Button {
+                                variants.removeAll { $0.id == variant.id }
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            }
+            
+            sectionCard {
+                VStack(spacing: 12) {
+                    LabeledTextField("Variant Name", text: $draftVariantName, icon: "tag")
+                    LabeledTextField("Variant Description", text: $draftVariantDescription, icon: "text.alignleft")
+                    
+                    Button {
+                        variants.append(VariantDraft(name: draftVariantName, description: draftVariantDescription))
+                        draftVariantName = ""
+                        draftVariantDescription = ""
+                    } label: {
+                        Label("Add Variant", systemImage: "plus.circle.fill")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(draftVariantName.isEmpty)
+                }
             }
         }
     }
@@ -111,10 +223,10 @@ struct AddProjectView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    Picker("Job Type", selection: $selectedJobType) {
-                        Text("Select a type…").tag(JobType?.none)
+                    Picker("Job Type", selection: $selectedJobTypeID) {
+                        Text("Select a type…").tag(PersistentIdentifier?.none)
                         ForEach(allJobTypes) { jt in
-                            Label(jt.name, systemImage: jt.icon).tag(JobType?.some(jt))
+                            Label(jt.name, systemImage: jt.icon).tag(PersistentIdentifier?.some(jt.persistentModelID))
                         }
                     }
                     .pickerStyle(.menu)
@@ -140,13 +252,6 @@ struct AddProjectView: View {
         }
     }
 
-    // MARK: - Budget Section
-
-    private var budgetSection: some View {
-        sectionCard {
-            LabeledTextField("Budget", text: $budget, icon: "dollarsign", keyboardType: .decimalPad)
-        }
-    }
 
     // MARK: - Date Section
 
@@ -242,60 +347,89 @@ struct AddProjectView: View {
     // MARK: - Save
 
     private func saveProject() {
-        guard let businessKey = businessManager.businessKey,
-              let jobType = selectedJobType else { return }
+        guard let businessKey = businessManager.businessKey else { return }
 
-        let project = Project(
-            businessKey: businessKey,
-            title: autoTitle,
-            description: projectDescription.isEmpty ? nil : projectDescription,
-            projectType: jobType.name,
-            startDate: hasStartDate ? startDate : nil,
-            dueDate: hasDueDate ? dueDate : nil
-        )
-
-        if let budgetValue = Decimal(string: budget) {
-            project.estimatedBudget = budgetValue
-        }
-
-        project.client = selectedClient
-        project.business = businessManager.currentBusiness
-
-        // Promote lead to active when attached to a project
-        if let client = selectedClient, client.status == .lead {
-            client.status = .active
-            client.updatedAt = .now
-        }
-
-        let assigned = allMembers.filter { selectedMembers.contains($0.persistentModelID) }
-        project.assignedMembers = assigned
-
-        // Pre-fill scope items from job type template
-        for template in jobType.scopeItemTemplates {
-            let scopeItem = ScopeItem(
+        if isTemplate {
+            // 1. Create Parent JobType
+            let parentJobType = JobType(
                 businessKey: businessKey,
-                laborHours: template.defaultLaborHours,
-                fixedCost: template.defaultFixedCost,
-                costMarkup: template.defaultCostMarkup,
-                description: template.name
+                name: newJobTypeName,
+                parent: nil
             )
-            scopeItem.project = project
-            modelContext.insert(scopeItem)
-
-            if let resource = template.resource {
-                let unit = template.defaultUnit ?? resource.unit
-                let sir = ScopeItemResource(
+            parentJobType.business = businessManager.currentBusiness
+            modelContext.insert(parentJobType)
+            
+            // 2. Create Parent Template Project (Masters Scope)
+            let parentProject = Project(
+                businessKey: businessKey,
+                title: newJobTypeName,
+                description: projectDescription.isEmpty ? nil : projectDescription,
+                status: .template
+            )
+            parentProject.jobType = parentJobType
+            parentProject.business = businessManager.currentBusiness
+            modelContext.insert(parentProject)
+            
+            // 3. Create Variants
+            for varDraft in variants {
+                let variantJobType = JobType(
                     businessKey: businessKey,
-                    quantity: template.defaultQuantity,
-                    unit: unit
+                    name: varDraft.name,
+                    variantDescription: varDraft.description.isEmpty ? nil : varDraft.description,
+                    parent: parentJobType
                 )
-                sir.resource = resource
-                sir.scopeItem = scopeItem
-                modelContext.insert(sir)
+                variantJobType.business = businessManager.currentBusiness
+                modelContext.insert(variantJobType)
+                
+                let variantProject = Project(
+                    businessKey: businessKey,
+                    title: varDraft.name,
+                    description: varDraft.description.isEmpty ? nil : varDraft.description,
+                    status: .template
+                )
+                variantProject.jobType = variantJobType
+                variantProject.business = businessManager.currentBusiness
+                modelContext.insert(variantProject)
             }
+            
+        } else {
+            // Regular Project Creation
+            let project = Project(
+                businessKey: businessKey,
+                title: autoTitle,
+                description: projectDescription.isEmpty ? nil : projectDescription,
+                status: .planning,
+                startDate: hasStartDate ? startDate : nil,
+                dueDate: hasDueDate ? dueDate : nil
+            )
+
+            project.client = allClients.first { $0.persistentModelID == selectedClientID }
+            project.business = businessManager.currentBusiness
+
+            if let templateJobType = allJobTypes.first(where: { $0.persistentModelID == selectedJobTypeID }) {
+                project.jobType = templateJobType
+                
+                // Deep Duplication from Template
+                if let templateProject = templateJobType.templateProject {
+                    let service = ProjectService(modelContext: modelContext)
+                    service.duplicateTemplate(from: templateProject, to: project)
+                }
+            }
+
+            // Promote lead to active
+            if let clientID = selectedClientID,
+               let client = allClients.first(where: { $0.persistentModelID == clientID }),
+               client.status == .lead {
+                client.status = .active
+                client.updatedAt = .now
+            }
+
+            let assigned = allMembers.filter { selectedMembers.contains($0.persistentModelID) }
+            project.assignedMembers = assigned
+
+            modelContext.insert(project)
         }
 
-        modelContext.insert(project)
         dismiss()
     }
 }

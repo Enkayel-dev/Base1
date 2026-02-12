@@ -161,7 +161,11 @@ extension Resource {
             businessKey: businessKey,
             name: "Deck Stain",
             category: .material,
-            materialTypeName: "Deck Stain"
+            materialTypeName: "Deck Stain",
+            coverageRate: 200, // 200 sqft per gallon
+            coverageUnit: .sqft,
+            defaultWasteFactor: 0.1,
+            defaultCoats: 2
         )
 
         let stainBrown = Resource(
@@ -235,6 +239,30 @@ extension Resource {
             van,
             orbitalSander, drillSet,
         ]
+    }
+}
+
+// MARK: - Sample Measurements
+
+extension ProjectMeasurement {
+    static func sampleMeasurements(businessKey: String, project: Project) -> [ProjectMeasurement] {
+        let m1 = ProjectMeasurement(
+            businessKey: businessKey,
+            name: "Main Deck Outer Area",
+            value: 450,
+            unit: .sqft
+        )
+        m1.project = project
+
+        let m2 = ProjectMeasurement(
+            businessKey: businessKey,
+            name: "Railings Total Length",
+            value: 60,
+            unit: .feet
+        )
+        m2.project = project
+
+        return [m1, m2]
     }
 }
 
@@ -578,6 +606,12 @@ enum SampleDataContainer {
         projects.forEach { project in
             project.business = business
             context.insert(project)
+
+            // Add sample measurements to first project
+            if project === projects.first {
+                ProjectMeasurement.sampleMeasurements(businessKey: bk, project: project)
+                    .forEach { context.insert($0) }
+            }
         }
 
         // Resources

@@ -34,6 +34,18 @@ public final class Resource {
     public var materialTypeName: String?
     public var variantLabel: String?
 
+    // MARK: - Coverage Fields (Materials)
+
+    public var coverageRate: Decimal?
+    public var coverageUnitRaw: String? // UnitOfMeasure
+    public var defaultWasteFactor: Decimal? // e.g., 0.10 for 10%
+    public var defaultCoats: Int?
+
+    // MARK: - Packaging & Consumption Fields
+
+    public var unitsPerPackage: Decimal? // e.g., 5 sheets per set
+    public var consumptionUnitLabel: String? // e.g., "Sheet", "Ounce"
+
     // MARK: - Vehicle-Specific Fields
 
     public var vehicleMake: String?
@@ -84,6 +96,11 @@ public final class Resource {
     public var unit: UnitOfMeasure {
         get { UnitOfMeasure(rawValue: unitRaw) ?? .each }
         set { unitRaw = newValue.rawValue }
+    }
+
+    public var coverageUnit: UnitOfMeasure? {
+        get { coverageUnitRaw.flatMap { UnitOfMeasure(rawValue: $0) } }
+        set { coverageUnitRaw = newValue?.rawValue }
     }
 
     public var totalValue: Decimal? {
@@ -138,7 +155,13 @@ public final class Resource {
         vehicleModel: String? = nil,
         startingKilometers: Int? = nil,
         serviceNotes: String? = nil,
-        isShopTool: Bool = false
+        isShopTool: Bool = false,
+        coverageRate: Decimal? = nil,
+        coverageUnit: UnitOfMeasure? = nil,
+        defaultWasteFactor: Decimal? = nil,
+        defaultCoats: Int? = nil,
+        unitsPerPackage: Decimal? = nil,
+        consumptionUnitLabel: String? = nil
     ) {
         self.businessKey = businessKey
         self.name = name
@@ -155,6 +178,12 @@ public final class Resource {
         self.startingKilometers = startingKilometers
         self.serviceNotes = serviceNotes
         self.isShopTool = isShopTool
+        self.coverageRate = coverageRate
+        self.coverageUnitRaw = coverageUnit?.rawValue
+        self.defaultWasteFactor = defaultWasteFactor
+        self.defaultCoats = defaultCoats
+        self.unitsPerPackage = unitsPerPackage
+        self.consumptionUnitLabel = consumptionUnitLabel
         self.createdAt = .now
         self.updatedAt = .now
     }

@@ -54,6 +54,7 @@ struct Tab2View: View {
 
             if timedAppointments.isEmpty && allDayAppointments.isEmpty {
                 EmptyScheduleView()
+                    .frame(maxHeight: .infinity, alignment: .top)
             } else {
                 DayTimelineView(
                     appointments: timedAppointments,

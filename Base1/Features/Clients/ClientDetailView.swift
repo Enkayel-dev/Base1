@@ -47,39 +47,40 @@ struct ClientDetailView: View {
     // MARK: - Header Section
     
     private var headerSection: some View {
-        VStack(spacing: 16) {
+        HStack(spacing: 12) {
             Image(systemName: "person.circle.fill")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 80, height: 80)
-                .foregroundStyle(.blue.gradient)
+                .font(.title3)
+                .foregroundStyle(.blue)
+                .frame(width: 24)
             
-            VStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(client.displayName)
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .font(.headline)
+                    .fontWeight(.semibold)
                 
-                if let company = client.companyName, !company.isEmpty {
-                    Text(company)
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    if let company = client.companyName, !company.isEmpty {
+                        Text(company)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Text(client.status.displayTitle)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(statusColor.gradient)
+                        .clipShape(Capsule())
                 }
-                
-                Text(client.status.displayTitle)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(statusColor.gradient)
-                    .clipShape(Capsule())
-                    .padding(.top, 4)
             }
+            
+            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
     // MARK: - Contact Section

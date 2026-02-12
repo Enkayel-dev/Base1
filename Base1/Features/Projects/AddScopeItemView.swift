@@ -28,9 +28,13 @@ struct AddScopeItemView: View {
     // MARK: - Resource Entries
 
     @State private var resourceEntries: [ResourceEntry] = []
-    @State private var pendingResource: Resource?
+    @State private var selectedParentResource: Resource?
+    @State private var selectedVariantResource: Resource?
     @State private var pendingQuantity = ""
     @State private var pendingUnit: UnitOfMeasure = .each
+    @State private var pendingMeasurements: Set<ProjectMeasurement> = []
+    @State private var pendingWasteFactor = ""
+    @State private var pendingCoats = ""
 
     // MARK: - Queries
 
@@ -112,9 +116,15 @@ struct AddScopeItemView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(entry.resource.name)
                                 .font(.subheadline)
-                            Text("\(entry.quantity as NSDecimalNumber) \(entry.unit.abbreviation)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                Text("\(entry.quantity as NSDecimalNumber) \(entry.unit.abbreviation)")
+                                if !entry.measurements.isEmpty {
+                                    Text("•")
+                                    Text(entry.measurements.map { $0.name }.joined(separator: ", "))
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                             if let unitCost = entry.resource.unitCost {
                                 Text("Cost: \(formatCurrency(entry.quantity * unitCost))")
                                     .font(.caption)
@@ -141,33 +151,136 @@ struct AddScopeItemView: View {
 
                 // Add resource row
                 VStack(alignment: .leading, spacing: 8) {
-                    Picker("Resource", selection: $pendingResource) {
-                        Text("Select Resource").tag(Resource?.none)
-                        ForEach(businessResources) { resource in
-                            Label(resource.name, systemImage: resource.category.systemImage)
-                                .tag(Resource?.some(resource))
+                    Picker("Material Type", selection: $selectedParentResource) {
+                        Text("Select Material Type").tag(Resource?.none)
+                        ForEach(businessResources.filter { $0.category == .material && $0.parentMaterial == nil }) { resource in
+                            Text(resource.name).tag(Resource?.some(resource))
                         }
                     }
                     .pickerStyle(.menu)
 
-                    if pendingResource != nil {
-                        HStack(spacing: 12) {
-                            LabeledTextField("Qty", text: $pendingQuantity, icon: "number", keyboardType: .decimalPad)
+                    if let parent = selectedParentResource {
+                        Picker("Variant", selection: $selectedVariantResource) {
+                            Text("Select Variant").tag(Resource?.none)
+                            ForEach(parent.materialVariants) { variant in
+                                Text(variant.variantLabel ?? variant.name).tag(Resource?.some(variant))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedVariantResource) { _, newValue in
+                            if let variant = newValue {
+                                pendingUnit = variant.unit
+                                // Auto-fill defaults from the resource
+                                if let waste = variant.defaultWasteFactor {
+                                    pendingWasteFactor = "\(waste * 100 as NSDecimalNumber)"
+                                } else {
+                                    pendingWasteFactor = ""
+                                }
+                                
+                                if let coats = variant.defaultCoats {
+                                    pendingCoats = "\(coats)"
+                                } else {
+                                    pendingCoats = ""
+                                }
+                            }
+                        }
+                    }
 
+                    if let res = selectedVariantResource {
+                        if let rate = res.coverageRate, let cUnit = res.coverageUnit {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Unit")
+                                Text("Coverage: 1 \(res.unit.displayTitle) covers \(rate as NSDecimalNumber) \(cUnit.abbreviation)")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Picker("Unit", selection: $pendingUnit) {
-                                    ForEach(UnitOfMeasure.grouped(), id: \.category) { group in
-                                        Section(group.category.displayTitle) {
-                                            ForEach(group.units) { unit in
-                                                Text(unit.displayTitle).tag(unit)
+                                    .foregroundStyle(.blue)
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Select Measurements")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 8) {
+                                            ForEach(project.measurements) { m in
+                                                Button {
+                                                    if pendingMeasurements.contains(m) {
+                                                        pendingMeasurements.remove(m)
+                                                    } else {
+                                                        pendingMeasurements.insert(m)
+                                                    }
+                                                } label: {
+                                                    HStack(spacing: 4) {
+                                                        Text(m.name)
+                                                        Text("(\(m.value as NSDecimalNumber) \(m.unit.abbreviation))")
+                                                            .font(.caption2)
+                                                            .opacity(0.8)
+                                                        
+                                                        if pendingMeasurements.contains(m) {
+                                                            Image(systemName: "checkmark.circle.fill")
+                                                        }
+                                                    }
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 6)
+                                                    .background(pendingMeasurements.contains(m) ? Color.blue : Color.secondary.opacity(0.1))
+                                                    .foregroundStyle(pendingMeasurements.contains(m) ? .white : .primary)
+                                                    .clipShape(Capsule())
+                                                }
                                             }
                                         }
                                     }
                                 }
-                                .pickerStyle(.menu)
+                                .padding(.vertical, 4)
+
+                                if !pendingMeasurements.isEmpty {
+                                    HStack(spacing: 12) {
+                                        LabeledTextField("Waste %", text: $pendingWasteFactor, icon: "percent", keyboardType: .decimalPad)
+                                        LabeledTextField("Coats", text: $pendingCoats, icon: "paintpalette", keyboardType: .numberPad)
+                                    }
+
+                                    if let calc = temporaryCalculatedQuantity {
+                                        let rate = res.coverageRate ?? 0
+                                        let wasteStr = pendingWasteFactor.isEmpty ? "0" : pendingWasteFactor
+                                        let coatsStr = pendingCoats.isEmpty ? "1" : pendingCoats
+                                        
+                                        // Calculate total area for display
+                                        let totalArea: Decimal = pendingMeasurements.reduce(0) { sum, m in
+                                            let converted = m.unit.convert(m.value, to: cUnit) ?? 0
+                                            return sum + converted
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Usage: \(calc as NSDecimalNumber) \(res.unit.abbreviation)")
+                                                .font(.headline)
+                                                .foregroundStyle(.blue)
+                                            
+                                            Text("(at \(totalArea as NSDecimalNumber) \(cUnit.abbreviation) total, \(coatsStr) coat\(coatsStr == "1" ? "" : "s"), \(wasteStr)% waste)")
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding(.vertical, 4)
+                                    }
+                                }
+                            }
+                        }
+
+                        if pendingMeasurements.isEmpty {
+                            HStack(spacing: 12) {
+                                LabeledTextField("Qty", text: $pendingQuantity, icon: "number", keyboardType: .decimalPad)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Unit")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Picker("Unit", selection: $pendingUnit) {
+                                        ForEach(UnitOfMeasure.grouped(), id: \.category) { group in
+                                            Section(group.category.displayTitle) {
+                                                ForEach(group.units) { unit in
+                                                    Text(unit.displayTitle).tag(unit)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                }
                             }
                         }
 
@@ -177,11 +290,11 @@ struct AddScopeItemView: View {
                             Label("Add Resource", systemImage: "plus.circle.fill")
                                 .font(.subheadline)
                         }
-                        .disabled(pendingQuantity.isEmpty)
+                        .disabled(pendingQuantity.isEmpty && temporaryCalculatedQuantity == nil)
                     }
                 }
 
-                if let res = pendingResource {
+                if let res = selectedVariantResource {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Available: \(res.availableQuantity as NSDecimalNumber) \(res.unit.abbreviation)")
                             .font(.caption)
@@ -309,6 +422,34 @@ struct AddScopeItemView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
+    // MARK: - Temporary Calculation
+
+    private var temporaryCalculatedQuantity: Decimal? {
+        guard let res = selectedVariantResource,
+              !pendingMeasurements.isEmpty,
+              let rate = res.coverageRate,
+              rate > 0 else { return nil }
+
+        let cUnit = res.coverageUnit ?? .sqft
+        var totalConvertedValue: Decimal = 0
+        
+        for m in pendingMeasurements {
+            if let converted = m.unit.convert(m.value, to: cUnit) {
+                totalConvertedValue += converted
+            }
+        }
+        
+        if totalConvertedValue == 0 { return nil }
+
+        let usageUnits = (totalConvertedValue / rate)
+        let waste = 1 + ((Decimal(string: pendingWasteFactor) ?? (res.defaultWasteFactor ?? 0) * 100) / 100)
+        let coats = Decimal(integerLiteral: Int(pendingCoats) ?? (res.defaultCoats ?? 1))
+        
+        let inventoryQty = usageUnits * coats * waste
+        
+        return inventoryQty
+    }
+
     // MARK: - Calculated Total
 
     private var calculatedTotal: Decimal {
@@ -334,13 +475,40 @@ struct AddScopeItemView: View {
     // MARK: - Add Resource Entry
 
     private func addResourceEntry() {
-        guard let resource = pendingResource,
-              let qty = Decimal(string: pendingQuantity) else { return }
+        guard let resource = selectedVariantResource else { return }
+        
+        let qty: Decimal
+        let isOverridden: Bool
+        
+        if let calc = temporaryCalculatedQuantity, pendingQuantity.isEmpty {
+            qty = calc
+            isOverridden = false
+        } else {
+            qty = Decimal(string: pendingQuantity) ?? 0
+            isOverridden = true
+        }
 
-        resourceEntries.append(ResourceEntry(resource: resource, quantity: qty, unit: pendingUnit))
-        pendingResource = nil
+        resourceEntries.append(ResourceEntry(
+            resource: resource,
+            quantity: qty,
+            unit: pendingUnit,
+            measurements: Array(pendingMeasurements),
+            wasteFactor: Decimal(string: pendingWasteFactor),
+            coats: Int(pendingCoats),
+            isQuantityOverridden: isOverridden
+        ))
+        
+        selectedVARIANT_RESET()
+    }
+
+    private func selectedVARIANT_RESET() {
+        selectedParentResource = nil
+        selectedVariantResource = nil
         pendingQuantity = ""
         pendingUnit = .each
+        pendingMeasurements = []
+        pendingWasteFactor = ""
+        pendingCoats = ""
     }
 
     // MARK: - Save
@@ -368,9 +536,13 @@ struct AddScopeItemView: View {
             let sir = ScopeItemResource(
                 businessKey: businessKey,
                 quantity: entry.quantity,
-                unit: entry.unit
+                unit: entry.unit,
+                wasteFactor: entry.wasteFactor,
+                coats: entry.coats,
+                isQuantityOverridden: entry.isQuantityOverridden
             )
             sir.resource = entry.resource
+            sir.measurements = entry.measurements
             sir.scopeItem = scopeItem
             modelContext.insert(sir)
         }
@@ -394,4 +566,8 @@ private struct ResourceEntry: Identifiable {
     let resource: Resource
     let quantity: Decimal
     let unit: UnitOfMeasure
+    let measurements: [ProjectMeasurement]
+    let wasteFactor: Decimal?
+    let coats: Int?
+    let isQuantityOverridden: Bool
 }

@@ -21,6 +21,8 @@ enum DrawerDestination: Identifiable, Equatable {
     case addProject
     case projectDetail(Project)
     case addScopeItem(Project)
+    case addMeasurement(Project)
+    case addProjectPhoto(Project)
 
     // Resources
     case addEquipment
@@ -35,10 +37,6 @@ enum DrawerDestination: Identifiable, Equatable {
 
     // Settings / Business
     case inviteMember
-    case jobTypeList
-    case addJobType
-    case jobTypeDetail(JobType)
-    case addScopeItemTemplate(JobType)
 
     // MARK: Identifiable
 
@@ -50,6 +48,8 @@ enum DrawerDestination: Identifiable, Equatable {
         case .addProject:                       "addProject"
         case .projectDetail(let p):             "projectDetail-\(p.id)"
         case .addScopeItem(let p):              "addScopeItem-\(p.id)"
+        case .addMeasurement(let p):            "addMeasurement-\(p.id)"
+        case .addProjectPhoto(let p):           "addProjectPhoto-\(p.id)"
         case .addEquipment:                     "addEquipment"
         case .addMaterial:                      "addMaterial"
         case .addVehicle:                       "addVehicle"
@@ -60,10 +60,6 @@ enum DrawerDestination: Identifiable, Equatable {
         case .toolList:                         "toolList"
         case .materialVariants(let r):          "materialVariants-\(r.id)"
         case .inviteMember:                     "inviteMember"
-        case .jobTypeList:                      "jobTypeList"
-        case .addJobType:                       "addJobType"
-        case .jobTypeDetail(let j):             "jobTypeDetail-\(j.id)"
-        case .addScopeItemTemplate(let j):      "addScopeItemTemplate-\(j.id)"
         }
     }
 

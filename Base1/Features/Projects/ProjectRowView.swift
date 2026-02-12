@@ -42,8 +42,8 @@ struct ProjectRowView: View {
                         .background(statusColor.gradient)
                         .clipShape(Capsule())
 
-                    if let jobType = project.projectTypeRaw {
-                        Text(jobType)
+                    if let jobType = project.jobType {
+                        Text(jobType.name)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -84,6 +84,7 @@ struct ProjectRowView: View {
         case .onHold: .orange
         case .completed: .purple
         case .cancelled: .red
+        case .template: .teal
         }
     }
 }

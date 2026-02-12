@@ -82,6 +82,7 @@ enum ProjectFilterOption: String, CaseIterable, Identifiable, Filterable {
     case inProgress = "Active"
     case onHold = "On Hold"
     case completed = "Done"
+    case templates = "Templates"
 
     var id: String { rawValue }
     var title: String { rawValue }

@@ -27,6 +27,8 @@ enum Base1SchemaV1: VersionedSchema {
             Member.self,
             JobType.self,
             ScopeItemTemplate.self,
+            ProjectMeasurement.self,
+            ProjectPhoto.self,
         ]
     }
 }

@@ -43,18 +43,13 @@ struct ClientRowView: View {
                     .clipShape(Capsule())
             }
 
-            // Data completeness icons — only for leads
-            if client.status == .lead {
-                HStack(spacing: 12) {
-                    fieldIcon("envelope", filled: client.email != nil && !client.email!.isEmpty)
-                    fieldIcon("phone", filled: client.phone != nil && !client.phone!.isEmpty)
-                    fieldIcon("mappin.and.ellipse", filled: client.address != nil && !client.address!.isEmpty)
-                }
-            }
-
-            // Project icon — only for active clients
-            if client.status == .active {
+            // Data completeness icons — always visible
+            HStack(spacing: 12) {
+                fieldIcon("envelope", filled: client.email != nil && !client.email!.isEmpty)
+                fieldIcon("phone", filled: client.phone != nil && !client.phone!.isEmpty)
+                fieldIcon("mappin.and.ellipse", filled: client.address != nil && !client.address!.isEmpty)
                 fieldIcon("folder", filled: hasOpenProject)
+                fieldIcon("calendar", filled: !client.appointments.isEmpty)
             }
         }
         .padding()
