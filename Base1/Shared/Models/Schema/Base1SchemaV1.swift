@@ -29,6 +29,7 @@ enum Base1SchemaV1: VersionedSchema {
             ScopeItemTemplate.self,
             ProjectMeasurement.self,
             ProjectPhoto.self,
+            ProjectMilestone.self,
         ]
     }
 }

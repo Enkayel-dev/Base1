@@ -27,52 +27,86 @@ struct ProjectRowView: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(project.title)
-                    .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.title)
+                        .font(.headline)
 
-                HStack(spacing: 8) {
-                    Text(project.status.displayTitle)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(statusColor.gradient)
-                        .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        Text(project.status.displayTitle)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(statusColor.gradient)
+                            .clipShape(Capsule())
 
-                    if let jobType = project.jobType {
-                        Text(jobType.name)
+                        if let jobType = project.jobType {
+                            Text(jobType.name)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    if let clientName = project.client?.displayName {
+                        Label(clientName, systemImage: "person")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let dateRange = dateRangeText {
+                        Label(dateRange, systemImage: "calendar")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                if let clientName = project.client?.displayName {
-                    Label(clientName, systemImage: "person")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Spacer()
 
-                if let dateRange = dateRangeText {
-                    Label(dateRange, systemImage: "calendar")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if project.isOverdue {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture { drawerRouter.present(.projectDetail(project)) }
 
-            Spacer()
-
-            if project.isOverdue {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+            if project.isLocked {
+                Button {
+                    drawerRouter.present(.projectEstimate(project))
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "doc.text.fill")
+                            .foregroundStyle(.blue)
+                        
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Project Estimate")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            
+                            Text(project.updatedAt, style: .date)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                    .background(.background.opacity(0.3))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
             }
         }
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onTapGesture { drawerRouter.present(.projectDetail(project)) }
     }
 
     // MARK: - Colors

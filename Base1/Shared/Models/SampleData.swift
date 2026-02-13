@@ -266,6 +266,28 @@ extension ProjectMeasurement {
     }
 }
 
+// MARK: - Sample Milestones
+
+extension ProjectMilestone {
+    static func sampleMilestones(businessKey: String, project: Project) -> [ProjectMilestone] {
+        let m1 = ProjectMilestone(
+            businessKey: businessKey,
+            milestoneType: .created,
+            date: project.createdAt
+        )
+        m1.project = project
+
+        let m2 = ProjectMilestone(
+            businessKey: businessKey,
+            milestoneType: .estimateSent,
+            date: project.createdAt.addingTimeInterval(86400) // 1 day later
+        )
+        m2.project = project
+
+        return [m1, m2]
+    }
+}
+
 // MARK: - Sample Scope Items
 
 extension ScopeItem {
@@ -610,6 +632,8 @@ enum SampleDataContainer {
             // Add sample measurements to first project
             if project === projects.first {
                 ProjectMeasurement.sampleMeasurements(businessKey: bk, project: project)
+                    .forEach { context.insert($0) }
+                ProjectMilestone.sampleMilestones(businessKey: bk, project: project)
                     .forEach { context.insert($0) }
             }
         }

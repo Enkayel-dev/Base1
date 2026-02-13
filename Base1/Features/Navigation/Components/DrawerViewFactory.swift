@@ -32,6 +32,8 @@ enum DrawerViewFactory {
             AddMeasurementView(project: project)
         case .addProjectPhoto(let project):
             AddProjectPhotoView(project: project)
+        case .projectEstimate(let project):
+            PDFPreviewView(project: project, business: project.business)
 
         // Resources
         case .addEquipment:

@@ -20,16 +20,31 @@ struct LiquidGlassFilterPicker<Filter: Filterable>: View {
     @Namespace private var glassNS
 
     var body: some View {
+        let filters = Array(Filter.allCases)
+        let topRow = filters.indices.filter { $0 % 2 == 0 }.map { filters[$0] }
+        let bottomRow = filters.indices.filter { $0 % 2 != 0 }.map { filters[$0] }
+
         GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                ForEach(Filter.allCases) { filter in
-                    filterButton(for: filter)
+            VStack(spacing: 4) {
+                // Top Row (Even indices: 0, 2, 4...)
+                HStack(spacing: 8) {
+                    ForEach(topRow) { filter in
+                        filterButton(for: filter)
+                    }
                 }
+                .padding(.horizontal, 6)
+                
+                // Bottom Row (Odd indices: 1, 3, 5...)
+                HStack(spacing: 8) {
+                    ForEach(bottomRow) { filter in
+                        filterButton(for: filter)
+                    }
+                }
+                .padding(.horizontal, 6)
             }
-            .frame(maxWidth: .infinity)
-            .padding(6)
+            .padding(.vertical, 8)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
     }
 

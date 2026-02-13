@@ -23,6 +23,7 @@ enum DrawerDestination: Identifiable, Equatable {
     case addScopeItem(Project)
     case addMeasurement(Project)
     case addProjectPhoto(Project)
+    case projectEstimate(Project)
 
     // Resources
     case addEquipment
@@ -50,6 +51,7 @@ enum DrawerDestination: Identifiable, Equatable {
         case .addScopeItem(let p):              "addScopeItem-\(p.id)"
         case .addMeasurement(let p):            "addMeasurement-\(p.id)"
         case .addProjectPhoto(let p):           "addProjectPhoto-\(p.id)"
+        case .projectEstimate(let p):           "projectEstimate-\(p.id)"
         case .addEquipment:                     "addEquipment"
         case .addMaterial:                      "addMaterial"
         case .addVehicle:                       "addVehicle"

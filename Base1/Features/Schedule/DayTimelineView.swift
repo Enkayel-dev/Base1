@@ -10,6 +10,8 @@ import SwiftUI
 struct DayTimelineView: View {
 
     let appointments: [Appointment]
+    let activeProjects: [Project]
+    let selectedDate: Date
     let isToday: Bool
 
     // MARK: - Constants
@@ -17,7 +19,12 @@ struct DayTimelineView: View {
     private let hourHeight: CGFloat = 60
     private let startHour: Int = 0    // 12:00 AM
     private let endHour: Int = 24     // 11:59 PM
-    private let gutterWidth: CGFloat = 50
+    private let hourGutterWidth: CGFloat = 50
+    private let projectColumnWidth: CGFloat = 24
+
+    private var gutterWidth: CGFloat {
+        hourGutterWidth + CGFloat(activeProjects.count) * projectColumnWidth
+    }
 
     private var totalHours: Int { endHour - startHour }
     private var totalHeight: CGFloat { CGFloat(totalHours) * hourHeight }
@@ -34,6 +41,11 @@ struct DayTimelineView: View {
                     ZStack(alignment: .topLeading) {
                         // Hour grid
                         hourGrid
+
+                        // Project Lines
+                        ForEach(Array(activeProjects.enumerated()), id: \.element.id) { index, project in
+                            projectLine(project: project, index: CGFloat(index))
+                        }
 
                         // Event blocks
                         let layouts = layoutEvents(availableWidth: eventWidth)
@@ -84,7 +96,7 @@ struct DayTimelineView: View {
                     Text(hourLabel(hour))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .frame(width: gutterWidth - 8, alignment: .trailing)
+                        .frame(width: hourGutterWidth - 8, alignment: .trailing)
 
                     Rectangle()
                         .fill(.secondary.opacity(0.2))
@@ -93,6 +105,87 @@ struct DayTimelineView: View {
                 }
                 .offset(y: y)
             }
+        }
+    }
+
+    // MARK: - Project Rendering
+
+    private func projectLine(project: Project, index: CGFloat) -> some View {
+        let x = hourGutterWidth + (index * projectColumnWidth) + (projectColumnWidth / 2)
+        
+        // Calculate start/end Y
+        let calendar = Calendar.current
+        
+        // Line Start: If created today, start at creation time. Else start at top.
+        let lineStartY: CGFloat = calendar.isDate(project.createdAt, inSameDayAs: selectedDate)
+            ? yPosition(for: project.createdAt)
+            : 0
+            
+        // Line End:
+        // 1. If completed today, end at completion time.
+        // 2. If isToday, end at .now.
+        // 3. Otherwise, end at bottom.
+        var lineEndY: CGFloat = totalHeight
+        if let completedDate = project.completedDate, calendar.isDate(completedDate, inSameDayAs: selectedDate) {
+            lineEndY = yPosition(for: completedDate)
+        } else if isToday {
+            lineEndY = yPosition(for: .now)
+        }
+
+        return ZStack(alignment: .topLeading) {
+            // Vertical Line
+            Rectangle()
+                .fill(projectColor(project))
+                .frame(width: 4)
+                .frame(height: max(0, lineEndY - lineStartY))
+                .opacity(0.6)
+                .offset(y: lineStartY)
+
+            // Milestones for this project that fall on this day
+            let milestonesOnDay = project.milestones.filter {
+                calendar.isDate($0.date, inSameDayAs: selectedDate)
+            }
+            
+            ForEach(milestonesOnDay) { milestone in
+                milestoneDot(milestone: milestone)
+                    .offset(x: -2, y: yPosition(for: milestone.date) - 8)
+            }
+        }
+        .offset(x: x - 2)
+    }
+
+    private func milestoneDot(milestone: ProjectMilestone) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(.white)
+                .frame(width: 8, height: 8)
+                .shadow(color: .black.opacity(0.2), radius: 2)
+                .overlay {
+                    Circle()
+                        .stroke(Color.primary.opacity(0.3), lineWidth: 1)
+                }
+
+            Text(milestone.milestoneType.displayTitle)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.1), radius: 1)
+        }
+    }
+
+    private func projectColor(_ project: Project) -> Color {
+        // Use status color or job type color if we had one. 
+        // For now status color is a good proxy or default to blue.
+        switch project.status {
+        case .planning: .blue
+        case .inProgress: .green
+        case .onHold: .orange
+        case .completed: .purple
+        case .cancelled: .red
+        case .template: .teal
         }
     }
 
@@ -108,7 +201,7 @@ struct DayTimelineView: View {
                 .fill(.red)
                 .frame(height: 1)
         }
-        .offset(x: gutterWidth - 4, y: y - 4)
+        .offset(x: hourGutterWidth - 4, y: y - 4)
     }
 
     // MARK: - Event Block

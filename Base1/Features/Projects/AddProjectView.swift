@@ -17,13 +17,9 @@ struct AddProjectView: View {
     // MARK: - Form Fields
 
     @State private var selectedClientID: PersistentIdentifier?
-    @State private var selectedJobTypeID: PersistentIdentifier?
+    @State private var selectedParentJobTypeID: PersistentIdentifier?
+    @State private var selectedVariantID: PersistentIdentifier?
     @State private var projectDescription = ""
-
-    @State private var hasStartDate = false
-    @State private var startDate = Date.now
-    @State private var hasDueDate = false
-    @State private var dueDate = Date.now.addingTimeInterval(604800)
 
     @State private var selectedMembers: Set<PersistentIdentifier> = []
     
@@ -59,16 +55,17 @@ struct AddProjectView: View {
         if isTemplate {
             return newJobTypeName.isEmpty ? "New Template" : newJobTypeName
         }
-        guard let jobType = allJobTypes.first(where: { $0.persistentModelID == selectedJobTypeID }),
+        guard let parentJobType = allJobTypes.first(where: { $0.persistentModelID == selectedParentJobTypeID }),
               let client = allClients.first(where: { $0.persistentModelID == selectedClientID }) else { return "" }
-        return "\(jobType.name) for \(client.lastName)"
+        
+        return "\(parentJobType.name) for \(client.displayName)"
     }
 
     private var canSave: Bool {
         if isTemplate {
             return !newJobTypeName.isEmpty
         }
-        return selectedClientID != nil && selectedJobTypeID != nil
+        return selectedClientID != nil && selectedVariantID != nil
     }
 
     var body: some View {
@@ -89,7 +86,6 @@ struct AddProjectView: View {
                             clientSection
                             jobTypeSection
                             titlePreview
-                            dateSection
                             descriptionSection
                             teamSection
                         } else {
@@ -213,23 +209,52 @@ struct AddProjectView: View {
 
     private var jobTypeSection: some View {
         sectionCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Job Type", systemImage: "wrench.and.screwdriver")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                if allJobTypes.isEmpty {
-                    Text("No job types yet — create them in Business Profile")
+            VStack(alignment: .leading, spacing: 16) {
+                // Parent Job Type Selection
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Job Type", systemImage: "wrench.and.screwdriver")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } else {
-                    Picker("Job Type", selection: $selectedJobTypeID) {
-                        Text("Select a type…").tag(PersistentIdentifier?.none)
-                        ForEach(allJobTypes) { jt in
-                            Label(jt.name, systemImage: jt.icon).tag(PersistentIdentifier?.some(jt.persistentModelID))
+
+                    let parents = allJobTypes.filter { $0.parent == nil }
+                    
+                    if parents.isEmpty {
+                        Text("No job types yet — create them in Business Profile")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Job Type", selection: $selectedParentJobTypeID) {
+                            Text("Select a type…").tag(PersistentIdentifier?.none)
+                            ForEach(parents) { jt in
+                                Label(jt.name, systemImage: jt.icon).tag(PersistentIdentifier?.some(jt.persistentModelID))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .onChange(of: selectedParentJobTypeID) { _, _ in
+                            selectedVariantID = nil // Reset variant when parent changes
                         }
                     }
-                    .pickerStyle(.menu)
+                }
+
+                // Variant Selection
+                if let parentID = selectedParentJobTypeID,
+                   let parent = allJobTypes.first(where: { $0.persistentModelID == parentID }),
+                   !parent.children.isEmpty {
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Select Variant", systemImage: "square.stack.3d.down.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        Picker("Variant", selection: $selectedVariantID) {
+                            Text("Select a variant…").tag(PersistentIdentifier?.none)
+                            ForEach(parent.children.sorted(by: { $0.name < $1.name })) { child in
+                                Text(child.name).tag(PersistentIdentifier?.some(child.persistentModelID))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
                 }
             }
         }
@@ -253,29 +278,6 @@ struct AddProjectView: View {
     }
 
 
-    // MARK: - Date Section
-
-    private var dateSection: some View {
-        sectionCard {
-            Toggle(isOn: $hasStartDate) {
-                Label("Start Date", systemImage: "calendar")
-            }
-
-            if hasStartDate {
-                DatePicker("Start", selection: $startDate, displayedComponents: .date)
-            }
-
-            Divider()
-
-            Toggle(isOn: $hasDueDate) {
-                Label("Due Date", systemImage: "calendar.badge.clock")
-            }
-
-            if hasDueDate {
-                DatePicker("Due", selection: $dueDate, displayedComponents: .date)
-            }
-        }
-    }
 
     // MARK: - Description Section
 
@@ -390,6 +392,15 @@ struct AddProjectView: View {
                 variantProject.jobType = variantJobType
                 variantProject.business = businessManager.currentBusiness
                 modelContext.insert(variantProject)
+
+                // Create milestone
+                let milestone = ProjectMilestone(
+                    businessKey: businessKey,
+                    milestoneType: .created,
+                    date: .now
+                )
+                milestone.project = variantProject
+                modelContext.insert(milestone)
             }
             
         } else {
@@ -399,18 +410,18 @@ struct AddProjectView: View {
                 title: autoTitle,
                 description: projectDescription.isEmpty ? nil : projectDescription,
                 status: .planning,
-                startDate: hasStartDate ? startDate : nil,
-                dueDate: hasDueDate ? dueDate : nil
+                startDate: nil,
+                dueDate: nil
             )
 
             project.client = allClients.first { $0.persistentModelID == selectedClientID }
             project.business = businessManager.currentBusiness
 
-            if let templateJobType = allJobTypes.first(where: { $0.persistentModelID == selectedJobTypeID }) {
-                project.jobType = templateJobType
+            if let variantJobType = allJobTypes.first(where: { $0.persistentModelID == selectedVariantID }) {
+                project.jobType = variantJobType
                 
                 // Deep Duplication from Template
-                if let templateProject = templateJobType.templateProject {
+                if let templateProject = variantJobType.templateProject {
                     let service = ProjectService(modelContext: modelContext)
                     service.duplicateTemplate(from: templateProject, to: project)
                 }
@@ -428,6 +439,15 @@ struct AddProjectView: View {
             project.assignedMembers = assigned
 
             modelContext.insert(project)
+
+            // Create milestone
+            let milestone = ProjectMilestone(
+                businessKey: businessKey,
+                milestoneType: .created,
+                date: .now
+            )
+            milestone.project = project
+            modelContext.insert(milestone)
         }
 
         dismiss()

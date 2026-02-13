@@ -17,6 +17,9 @@ struct Tab2View: View {
     @Query(sort: \Appointment.startDate)
     private var allAppointments: [Appointment]
 
+    @Query(sort: \Project.createdAt)
+    private var allProjects: [Project]
+
     // MARK: - Business Scope
 
     private var businessAppointments: [Appointment] {
@@ -24,7 +27,30 @@ struct Tab2View: View {
         return allAppointments.filter { $0.businessKey == key }
     }
 
+    private var businessProjects: [Project] {
+        guard let key = businessManager.businessKey else { return [] }
+        return allProjects.filter { $0.businessKey == key }
+    }
+
     // MARK: - Selected Day Filtering
+
+    private var activeProjectsForDay: [Project] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+
+        return businessProjects.filter { project in
+            // Project is active if:
+            // 1. Created on or before selected date (end of day)
+            // 2. AND (Not completed OR completed on or after start of selected date)
+            // 3. AND Status is not cancelled or template
+            let isCreatedBeforeOrOnDay = project.createdAt < endOfDay
+            let isNotCompletedOrCompletedAfterStart = project.completedDate == nil || project.completedDate! >= startOfDay
+            let isValidStatus = project.status != .cancelled && project.status != .template
+
+            return isCreatedBeforeOrOnDay && isNotCompletedOrCompletedAfterStart && isValidStatus
+        }
+    }
 
     private var selectedDayAppointments: [Appointment] {
         businessAppointments.filter {
@@ -58,6 +84,8 @@ struct Tab2View: View {
             } else {
                 DayTimelineView(
                     appointments: timedAppointments,
+                    activeProjects: activeProjectsForDay,
+                    selectedDate: selectedDate,
                     isToday: isSelectedDateToday
                 )
             }

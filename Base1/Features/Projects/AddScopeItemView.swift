@@ -237,7 +237,6 @@ struct AddScopeItemView: View {
                                     }
 
                                     if let calc = temporaryCalculatedQuantity {
-                                        let rate = res.coverageRate ?? 0
                                         let wasteStr = pendingWasteFactor.isEmpty ? "0" : pendingWasteFactor
                                         let coatsStr = pendingCoats.isEmpty ? "1" : pendingCoats
                                         

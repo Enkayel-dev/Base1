@@ -9,6 +9,9 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 - **NEVER move files between folders** without explicit user instruction.
 - **Read before writing.** Always read a file's current contents before modifying it.
 - **Preserve the architecture.** Shared Models go in `Shared/Models/`, Shared Services in `Shared/Services/`, Feature-specific files go in `Features/<FeatureName>/`.
+- **Modern Swift (6.x) Strictness**: Never leave unused variables (e.g., `let rate = ...` if not used). Swift 6 will fail or warn aggressively.
+- **iOS 26.0+ Screen Access**: NEVER use `UIScreen.main`. It is deprecated. Derive screen bounds from the active scene context (e.g., `windowScene.screen.bounds`).
+- **Decimal Formatting**: When using `NSDecimalNumber` for currency or string interpolation with nil-coalescing, always parenthesize the operation: `(optionalDecimal ?? 0) as NSDecimalNumber`.
 - **NEVER attempt to build the project.** Do not run `xcodebuild` or any build commands. The user handles builds in Xcode.
 - **NEVER act on diagnostics/warnings** unless the user explicitly mentions them. Ignore SourceKit diagnostics, linter warnings, and similar automated messages.
 - **Always update CLAUDE.md** when completing tasks that change architecture, add files, or establish new patterns.
@@ -16,7 +19,7 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 ## Build & Run
 - **Platform:** iOS (SwiftUI, SwiftData)
 - **Xcode project:** `Base1.xcodeproj`
-- **Build:** `xcodebuild -project Base1.xcodeproj -scheme Base1 -destination 'platform=iOS Simulator,name=iPhone 16' build`
+
 - **No package manager dependencies** — pure Apple frameworks
 
 ---
@@ -34,6 +37,7 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 | **SwiftData** | iOS 26.2 | Persistence — `@Model` macro for domain entities, `@Query` for reactive fetching |
 | **Observation** | iOS 26.2 | State management — `@Observable` macro replaces `ObservableObject`/`@Published` |
 | **Swift** | 6.x | Language — strict concurrency, `@MainActor` isolation |
+| **Liquid Glass** | iOS 26.2 | Glassmorphism — dynamic materials and morphing containers (`GlassEffectContainer`) |
 
 ### Architecture: Modern MV (Model–View)
 
@@ -194,6 +198,35 @@ Button { drawerRouter.present(.addClient) }
 - Nested drawers (e.g., JobTypeList > JobTypeDetail > AddScopeItemTemplate) need full-screen rendering
 - Single point of control for all drawer animations, z-ordering, and lifecycle
 
+#### Pattern: Liquid Glass & Morphing UI
+
+Base1 leverages the **Liquid Glass framework (iOS 26+)** for premium, fluid UI elements. This involves using `GlassEffectContainer` to group multiple glass views and enable morphing transitions.
+
+**Key Components:**
+- **`GlassEffectContainer`**: A container that blends multiple glass elements together and coordinates morphing animations.
+- **`.glassEffect()`**: Modifier to apply Liquid Glass materials (e.g., `.regular.interactive()`).
+- **`.glassEffectID(_:in:)`**: Used with `@Namespace` to identify elements for morphing transitions.
+
+**Implementation Example:**
+```swift
+GlassEffectContainer(spacing: 8) {
+    HStack {
+        ForEach(options) { option in
+            Button { /* select */ } label: {
+                Text(option.title)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .glassEffectID(option.id, in: glassNS)
+            }
+        }
+    }
+}
+```
+
+**Why Liquid Glass:**
+- Provides a sense of depth and fluidity beyond standard `ultraThinMaterial`.
+- Allows UI elements (like filter bubbles) to "melt" and reform as they move between states or across rows.
+- Highly performant rendering on iOS 26+ hardware.
+
 #### Pattern: Multi-Tenancy via `businessKey`
 
 Every domain model carries a `businessKey` field. All queries and factories accept `businessKey` as a parameter, enabling future multi-business support.
@@ -212,7 +245,7 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 |------|------|---------|
 | `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates/members/jobTypes/scopeItemTemplates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, taxNumber?, logoData?, createdAt |
 | `Client.swift` | `Client`, `ClientStatus` | Customer with status (lead/active/closed). Has businessKey |
-| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, computed totalScopeCost, totalLaborHours, hasInventoryIssues. No priority field. |
+| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, computed totalScopeCost, totalLaborHours, hasInventoryIssues. No priority field. **Has `isLocked` flag to prevent edits after estimate generation.** |
 | `Invoice.swift` | `Invoice`, `InvoiceStatus` | Billing (draft/sent/paid/overdue/cancelled). Has businessKey |
 | `Appointment.swift` | `Appointment`, `AppointmentType` | Scheduling (consultation/siteVisit/meeting/followUp/delivery). Has businessKey |
 | `Resource.swift` | `Resource`, `ResourceCategory` | Equipment/materials/vehicles/tools with category-specific fields. Equipment: equipmentMaterials relationship. Material: materialTypeName, variantLabel, parentMaterial/materialVariants self-referential parent-child. Vehicle: vehicleMake, vehicleModel, startingKilometers, serviceNotes. Tool: assignedVehicle relationship, isShopTool. Common: businessKey, scopeItems relationship, computed allocatedQuantity, availableQuantity, isMaterialType, isMaterialVariant, toolLocationLabel, vehicleDisplayLabel |
@@ -255,7 +288,7 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 |------|------|---------|
 | `MainTabView.swift` | `MainTabView` | Root view — ZStack with background, tab content, drawer overlay, nav buttons |
 | `Components/TabRouter.swift` | `TabRouter` (@Observable) | Tab selection state, offset-based slide animations |
-| `Components/DrawerRouter.swift` | `DrawerRouter` (@Observable), `DrawerDestination` | Centralized drawer presentation — stack-based, supports nesting. All views call `drawerRouter.present(.destination)` |
+| `Components/DrawerRouter.swift` | `DrawerRouter` (@Observable), `DrawerDestination` | Centralized drawer presentation — stack-based, supports nesting. All views call `drawerRouter.present(.destination)`. Added `.projectEstimate` for PDF preview. |
 | `Components/DrawerViewFactory.swift` | `DrawerViewFactory` | Maps `DrawerDestination` enum cases to SwiftUI content views |
 | `Components/BottomBarView.swift` | `BottomBarView` | Bottom bar container (search bar, workflow card, tab bar) |
 | `Components/CustomBottomTabBar.swift` | `CustomBottomTabBar` | 5-tab bar with matched geometry selection indicator |
@@ -291,6 +324,8 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
 | `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, assigned team section, scope items list, summary cards (cost, labor, inventory warnings) |
 | `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker, quantity, labor hours, cost markup, live cost estimate, status |
+| `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" x 11") estimate view for PDF generation |
+| `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | Drawer using `PDFView` and `ImageRenderer` to generate and display estimate PDFs |
 | `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icon, quantity, cost, status badge, inventory shortfall warning |
 | `Features/Resources/Tab4View.swift` | `Tab4View`, `ResourceListSheet` | Resources | 2x2 category grid (Equipment/Materials/Vehicles/Tools) — each card has Add and Open buttons. ResourceListSheet shows filtered list per category |
 | `Features/Resources/AddEquipmentView.swift` | `AddEquipmentView` | Resources | Add equipment form — name, description, materials used (multi-select), quantity, unit cost, availability, notes |

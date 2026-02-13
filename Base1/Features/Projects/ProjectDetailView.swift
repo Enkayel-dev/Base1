@@ -39,6 +39,7 @@ struct ProjectDetailView: View {
                     measurementsSection
                     scopeItemsSection
                     photosSection
+                    documentsSection
                     summarySection
                 }
                 .padding()
@@ -46,6 +47,50 @@ struct ProjectDetailView: View {
             }
         }
         .background(Color.clear)
+    }
+
+    private var documentsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Documents")
+                .font(.headline)
+
+            if !project.isLocked {
+                Text("No documents generated yet")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.thinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        Button {
+                            drawerRouter.present(.projectEstimate(project))
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Image(systemName: "doc.text.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundStyle(.blue)
+                                
+                                Text("Project Estimate")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.primary)
+                                
+                                Text(project.updatedAt, style: .date)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            .frame(width: 140, height: 140, alignment: .topLeading)
+                            .background(.thinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Project Header
@@ -75,6 +120,38 @@ struct ProjectDetailView: View {
                 Text(description)
                     .font(.body)
                     .foregroundStyle(.secondary)
+            }
+            
+            Divider()
+            
+            HStack(spacing: 20) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Start Date", systemImage: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    DatePicker("Start", selection: Binding(
+                        get: { project.startDate ?? .now },
+                        set: { project.startDate = $0 }
+                    ), displayedComponents: .date)
+                    .labelsHidden()
+                    .scaleEffect(0.9)
+                    .frame(height: 32)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Due Date", systemImage: "calendar.badge.clock")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    DatePicker("Due", selection: Binding(
+                        get: { project.dueDate ?? .now.addingTimeInterval(86400 * 7) },
+                        set: { project.dueDate = $0 }
+                    ), displayedComponents: .date)
+                    .labelsHidden()
+                    .scaleEffect(0.9)
+                    .frame(height: 32)
+                }
+                
+                Spacer()
             }
         }
         .padding()
@@ -171,11 +248,13 @@ struct ProjectDetailView: View {
                 Text("Measurements")
                     .font(.headline)
                 Spacer()
-                Button {
-                    drawerRouter.present(.addMeasurement(project))
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.blue)
+                if !project.isLocked {
+                    Button {
+                        drawerRouter.present(.addMeasurement(project))
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(.blue)
+                    }
                 }
             }
 
@@ -226,11 +305,13 @@ struct ProjectDetailView: View {
 
                 Spacer()
 
-                Button {
-                    drawerRouter.present(.addScopeItem(project))
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.blue)
+                if !project.isLocked {
+                    Button {
+                        drawerRouter.present(.addScopeItem(project))
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(.blue)
+                    }
                 }
             }
 
@@ -258,11 +339,13 @@ struct ProjectDetailView: View {
                 Text("Site Photos")
                     .font(.headline)
                 Spacer()
-                Button {
-                    drawerRouter.present(.addProjectPhoto(project))
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.blue)
+                if !project.isLocked {
+                    Button {
+                        drawerRouter.present(.addProjectPhoto(project))
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(.blue)
+                    }
                 }
             }
 
@@ -345,6 +428,54 @@ struct ProjectDetailView: View {
                 .background(.orange.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+
+            if project.status == .planning && !project.isLocked {
+                let isValid = project.client != nil && !project.scopeItems.isEmpty && !project.measurements.isEmpty
+                
+                Button {
+                    lockInProject()
+                } label: {
+                    HStack {
+                        Spacer()
+                        if isValid {
+                            Image(systemName: "lock.fill")
+                        } else {
+                            Image(systemName: "exclamationmark.triangle")
+                        }
+                        Text("Lock in & Prepare Estimate")
+                            .fontWeight(.bold)
+                        Spacer()
+                    }
+                    .padding()
+                    .background(isValid ? Color.blue : Color.secondary.opacity(0.3))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(!isValid)
+                
+                if !isValid {
+                    Text("Requires Client, Measurement, and Scope Item")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func lockInProject() {
+        project.status = .inProgress
+        project.isLocked = true
+        project.updatedAt = .now
+        
+        // Create milestone
+        if let businessKey = project.business?.businessKey {
+            let milestone = ProjectMilestone(
+                businessKey: businessKey,
+                milestoneType: .estimateSent,
+                date: .now
+            )
+            milestone.project = project
+            modelContext.insert(milestone)
         }
     }
 

@@ -16,6 +16,14 @@ struct ClientRowView: View {
         client.projects.contains { $0.status == .inProgress || $0.status == .planning }
     }
 
+    private var hasApprovedEstimate: Bool {
+        client.projects.contains { $0.isLocked }
+    }
+
+    private var hasPaidInvoice: Bool {
+        client.invoices.contains { $0.status == .paid }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Top row: name + status pill
@@ -50,6 +58,8 @@ struct ClientRowView: View {
                 fieldIcon("mappin.and.ellipse", filled: client.address != nil && !client.address!.isEmpty)
                 fieldIcon("folder", filled: hasOpenProject)
                 fieldIcon("calendar", filled: !client.appointments.isEmpty)
+                fieldIcon("doc.text", filled: hasApprovedEstimate)
+                fieldIcon("banknote", filled: hasPaidInvoice)
             }
         }
         .padding()

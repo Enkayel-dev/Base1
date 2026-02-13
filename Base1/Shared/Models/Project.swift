@@ -24,6 +24,7 @@ public final class Project {
 
     public var createdAt: Date
     public var updatedAt: Date
+    public var isLocked: Bool = false
 
     // MARK: - Relationships
 
@@ -51,6 +52,9 @@ public final class Project {
 
     @Relationship(deleteRule: .cascade, inverse: \ProjectPhoto.project)
     public var photos: [ProjectPhoto] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \ProjectMilestone.project)
+    public var milestones: [ProjectMilestone] = []
 
     public var assignedMembers: [Member] = []
 
@@ -109,7 +113,8 @@ public final class Project {
         status: ProjectStatus = .planning,
         projectType: String? = nil,
         startDate: Date? = nil,
-        dueDate: Date? = nil
+        dueDate: Date? = nil,
+        isLocked: Bool = false
     ) {
         self.businessKey = businessKey
         self.title = title
@@ -117,6 +122,7 @@ public final class Project {
         self.statusRaw = status.rawValue
         self.startDate = startDate
         self.dueDate = dueDate
+        self.isLocked = isLocked
         self.createdAt = .now
         self.updatedAt = .now
     }
