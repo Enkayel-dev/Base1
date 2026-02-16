@@ -16,6 +16,8 @@ enum DrawerViewFactory {
             AddClientView()
         case .clientDetail(let client):
             ClientDetailView(client: client)
+        case .memberDetail(let member):
+            MemberDetailView(member: member)
 
         // Schedule
         case .addAppointment:
@@ -34,6 +36,8 @@ enum DrawerViewFactory {
             AddProjectPhotoView(project: project)
         case .projectEstimate(let project):
             PDFPreviewView(project: project, business: project.business)
+        case .addSchedule(let project, let type):
+            AddScheduleView(project: project, milestoneType: type)
 
         // Resources
         case .addEquipment:

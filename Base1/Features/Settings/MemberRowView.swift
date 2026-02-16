@@ -11,60 +11,69 @@ struct MemberRowView: View {
 
     let member: Member
 
+    @Environment(DrawerRouter.self) private var drawerRouter
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Avatar
-            Text(member.initials)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(avatarColor.gradient)
-                .clipShape(Circle())
+        Button {
+            drawerRouter.present(.memberDetail(member))
+        } label: {
+            HStack(spacing: 12) {
+                // Avatar
+                Text(member.initials)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(avatarColor.gradient)
+                    .clipShape(Circle())
 
-            // Info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(member.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                // Info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(member.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
 
-                HStack(spacing: 6) {
-                    Text(member.email)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if let rate = member.hourlyRate {
-                        Text("·")
+                    HStack(spacing: 6) {
+                        Text(member.email)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(rate as NSDecimalNumber)/hr")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+
+                        if let rate = member.hourlyRate {
+                            Text("·")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("\(rate as NSDecimalNumber)/hr")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                // Status + Role
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(member.role.displayTitle)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(roleBadgeColor.gradient)
+                        .clipShape(Capsule())
+
+                    if member.inviteStatus == .pending {
+                        Text("Pending")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
                     }
                 }
             }
-
-            Spacer()
-
-            // Status + Role
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(member.role.displayTitle)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(roleBadgeColor.gradient)
-                    .clipShape(Capsule())
-
-                if member.inviteStatus == .pending {
-                    Text("Pending")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                }
-            }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
     }
 
     private var avatarColor: Color {

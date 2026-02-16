@@ -12,17 +12,25 @@ import SwiftData
 public final class ProjectMilestone {
     public var businessKey: String
     public var milestoneTypeRaw: String
-    public var date: Date          // exact timestamp
+    public var date: Date          // start timestamp
+    public var endDate: Date?      // optional end timestamp for duration-based events
     public var notes: String?
     public var createdAt: Date
 
     // Relationships
     public var project: Project?
+    public var assignedMember: Member?
 
     // Computed
     public var milestoneType: MilestoneType {
         get { MilestoneType(rawValue: milestoneTypeRaw) ?? .created }
         set { milestoneTypeRaw = newValue.rawValue }
+    }
+
+    /// Duration in hours (max 24h as per timeline logic, but technically unbounded here).
+    public var duration: Double {
+        guard let endDate else { return 0.0 }
+        return endDate.timeIntervalSince(date) / 3600.0
     }
 
     public init(

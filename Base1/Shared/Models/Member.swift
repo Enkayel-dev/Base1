@@ -24,6 +24,13 @@ public final class Member {
     public var createdAt: Date
     public var updatedAt: Date
 
+    // MARK: - Payroll Info
+
+    public var bankName: String?
+    public var accountNumber: String?
+    public var transitNumber: String?
+    public var sin: String? // Social Insurance Number
+
     // MARK: - Relationships
 
     public var business: Business?
@@ -33,6 +40,9 @@ public final class Member {
 
     @Relationship(inverse: \ScopeItem.assignedMember)
     public var assignedScopeItems: [ScopeItem] = []
+
+    @Relationship(inverse: \ProjectMilestone.assignedMember)
+    public var assignedMilestones: [ProjectMilestone] = []
 
     // MARK: - Computed
 
@@ -52,6 +62,17 @@ public final class Member {
             return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
         }
         return String(displayName.prefix(2)).uppercased()
+    }
+
+    /// Calculated total hours worked across all assigned milestones that have a duration.
+    public var hoursWorked: Double {
+        assignedMilestones.reduce(0.0) { $0 + $1.duration }
+    }
+
+    /// Grouped milestones by project for time tracking display.
+    public var milestonesByProject: [Project: [ProjectMilestone]] {
+        Dictionary(grouping: assignedMilestones) { $0.project ?? Project(businessKey: "TEMP", title: "Unknown") }
+            .filter { $0.key.title != "Unknown" }
     }
 
     // MARK: - Init

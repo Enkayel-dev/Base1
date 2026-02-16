@@ -35,9 +35,9 @@ struct ProjectDetailView: View {
                 VStack(spacing: 24) {
                     projectHeader
                     clientSection
-                    assignedTeamSection
                     measurementsSection
                     scopeItemsSection
+                    scheduleSection
                     photosSection
                     documentsSection
                     summarySection
@@ -216,19 +216,20 @@ struct ProjectDetailView: View {
         }
     }
 
-    // MARK: - Assigned Team Section
+    // MARK: - Team Section (Derived)
 
     @ViewBuilder
-    private var assignedTeamSection: some View {
-        if !project.assignedMembers.isEmpty {
+    private var teamSection: some View {
+        let members = project.teamMembers
+        if !members.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Assigned Team")
                     .font(.headline)
 
                 VStack(spacing: 0) {
-                    ForEach(project.assignedMembers) { member in
+                    ForEach(members) { member in
                         MemberRowView(member: member)
-                        if member.id != project.assignedMembers.last?.id {
+                        if member.id != members.last?.id {
                             Divider()
                         }
                     }
@@ -238,6 +239,76 @@ struct ProjectDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
+    }
+
+    // MARK: - Schedule Section
+
+    private var scheduleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Project Schedule")
+                .font(.headline)
+
+            VStack(spacing: 8) {
+                // Predefined lifecycle stages
+                let displayTypes: [MilestoneType] = [.siteVisitDone, .estimateApproved, .workStarted, .workCompleted]
+                
+                ForEach(displayTypes) { type in
+                    milestoneScheduleRow(type: type)
+                }
+            }
+        }
+    }
+
+    private func milestoneScheduleRow(type: MilestoneType) -> some View {
+        let milestone = project.milestones.first { $0.milestoneType == type }
+        
+        return Button {
+            drawerRouter.present(.addSchedule(project, type))
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: type.systemImage)
+                    .font(.title3)
+                    .foregroundStyle(milestone != nil ? .blue : .secondary)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(type.displayTitle)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
+                    
+                    if let milestone {
+                        HStack(spacing: 4) {
+                            if let member = milestone.assignedMember {
+                                Text(member.displayName)
+                                    .fontWeight(.semibold)
+                            }
+                            Text("Scheduled for \(milestone.date, style: .date)")
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    } else {
+                        Text("Not scheduled")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if milestone != nil {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Image(systemName: "plus.circle")
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding()
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Measurements Section
@@ -428,6 +499,9 @@ struct ProjectDetailView: View {
                 .background(.orange.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+
+            // MARK: Team section moved here to be part of the summary flow
+            teamSection
 
             if project.status == .planning && !project.isLocked {
                 let isValid = project.client != nil && !project.scopeItems.isEmpty && !project.measurements.isEmpty

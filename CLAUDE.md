@@ -254,6 +254,7 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 | `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build, Repair). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates |
 | `ScopeItemTemplate.swift` | `ScopeItemTemplate` | Reusable scope item library entries linked to Resources. Fields: businessKey, name, defaultQuantity, defaultLaborHours?, defaultCostMarkup?, notes?, createdAt. Relationships: resource, business, jobType |
 | `WorkflowTemplate.swift` | `WorkflowTemplate`, `WorkflowStepTemplate`, `WorkflowCategory` | Reusable workflow blueprints. Has businessKey |
+| `ProjectMilestone.swift` | `ProjectMilestone`, `MilestoneType` | Project lifecycle events (created, site visit, estimate sent, etc.). Marked as dots on the schedule timeline. |
 | `SampleData.swift` | Extensions on all models | Preview/test data factories. All factories accept businessKey param |
 | `Schema/Base1SchemaV1.swift` | `Base1SchemaV1`, `Base1MigrationPlan` | SwiftData schema versioning |
 
@@ -313,8 +314,8 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
 | `Features/Clients/ClientDetailView.swift` | `ClientDetailView` | Clients | Client detail drawer — contact info, linked projects, appointments |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
-| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer |
-| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, positioned event blocks, overlap layout, now-line |
+| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer. Queries active projects for timeline display. |
+| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, vertical project timeline lines with milestone dots on the left, positioned event blocks, overlap layout, now-line |
 | `Features/Schedule/AddAppointmentView.swift` | `AddAppointmentView` | Schedule | Add appointment form — type, date/time, all-day, location, client/project linking, reminders |
 | `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
 | `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
@@ -397,6 +398,7 @@ Base1/
 │   │   ├── JobType.swift
 │   │   ├── ScopeItemTemplate.swift
 │   │   ├── WorkflowTemplate.swift
+│   │   ├── ProjectMilestone.swift
 │   │   ├── SampleData.swift
 │   │   └── Schema/
 │   │       └── Base1SchemaV1.swift

@@ -13,6 +13,7 @@ enum DrawerDestination: Identifiable, Equatable {
     // Clients
     case addClient
     case clientDetail(Client)
+    case memberDetail(Member)
 
     // Schedule
     case addAppointment
@@ -24,6 +25,7 @@ enum DrawerDestination: Identifiable, Equatable {
     case addMeasurement(Project)
     case addProjectPhoto(Project)
     case projectEstimate(Project)
+    case addSchedule(Project, MilestoneType)
 
     // Resources
     case addEquipment
@@ -45,6 +47,7 @@ enum DrawerDestination: Identifiable, Equatable {
         switch self {
         case .addClient:                        "addClient"
         case .clientDetail(let c):              "clientDetail-\(c.id)"
+        case .memberDetail(let m):              "memberDetail-\(m.id)"
         case .addAppointment:                   "addAppointment"
         case .addProject:                       "addProject"
         case .projectDetail(let p):             "projectDetail-\(p.id)"
@@ -52,6 +55,7 @@ enum DrawerDestination: Identifiable, Equatable {
         case .addMeasurement(let p):            "addMeasurement-\(p.id)"
         case .addProjectPhoto(let p):           "addProjectPhoto-\(p.id)"
         case .projectEstimate(let p):           "projectEstimate-\(p.id)"
+        case .addSchedule(let p, let m):        "addSchedule-\(p.id)-\(m.rawValue)"
         case .addEquipment:                     "addEquipment"
         case .addMaterial:                      "addMaterial"
         case .addVehicle:                       "addVehicle"

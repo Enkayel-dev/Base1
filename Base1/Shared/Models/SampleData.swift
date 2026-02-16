@@ -284,7 +284,17 @@ extension ProjectMilestone {
         )
         m2.project = project
 
-        return [m1, m2]
+        // New duration-based milestone for timeline segment 
+        let m3 = ProjectMilestone(
+            businessKey: businessKey,
+            milestoneType: .workStarted,
+            date: .now.addingTimeInterval(-3600), // Started 1h ago
+            notes: "Initial framing"
+        )
+        m3.endDate = .now.addingTimeInterval(3600 * 4) // Ends in 4h
+        m3.project = project
+        
+        return [m1, m2, m3]
     }
 }
 
@@ -376,6 +386,9 @@ extension Member {
             hourlyRate: 55.00
         )
         member.acceptedAt = .now.addingTimeInterval(-3 * 86400)
+        member.bankName = "Royal Bank of Canada"
+        member.transitNumber = "12345"
+        member.accountNumber = "987654321"
 
         let pending = Member(
             businessKey: businessKey,

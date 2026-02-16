@@ -141,7 +141,31 @@ struct DayTimelineView: View {
                 .opacity(0.6)
                 .offset(y: lineStartY)
 
-            // Milestones for this project that fall on this day
+            // Assigned Member segments (Milestones with duration)
+            let durationMilestones = project.milestones.filter {
+                $0.endDate != nil && calendar.isDate($0.date, inSameDayAs: selectedDate)
+            }
+            
+            ForEach(durationMilestones) { milestone in
+                let segmentStartY = yPosition(for: milestone.date)
+                let segmentEndY = yPosition(for: milestone.endDate ?? milestone.date)
+                
+                Rectangle()
+                    .fill(memberColor(milestone.assignedMember))
+                    .frame(width: 6) // Slightly wider to stand out
+                    .frame(height: max(0, segmentEndY - segmentStartY))
+                    .offset(x: -1, y: segmentStartY)
+                    .overlay(alignment: .top) {
+                        if let member = milestone.assignedMember {
+                            Text(member.initials)
+                                .font(.system(size: 6, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.top, 2)
+                        }
+                    }
+            }
+
+            // Milestones for this project that fall on this day (dots)
             let milestonesOnDay = project.milestones.filter {
                 calendar.isDate($0.date, inSameDayAs: selectedDate)
             }
@@ -161,8 +185,20 @@ struct DayTimelineView: View {
                 .frame(width: 8, height: 8)
                 .shadow(color: .black.opacity(0.2), radius: 2)
                 .overlay {
-                    Circle()
-                        .stroke(Color.primary.opacity(0.3), lineWidth: 1)
+                    if let member = milestone.assignedMember {
+                        Circle()
+                            .fill(memberColor(member))
+                    } else {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.3), lineWidth: 1)
+                    }
+                }
+                .overlay {
+                    if let member = milestone.assignedMember {
+                        Text(member.initials)
+                            .font(.system(size: 4, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
                 }
 
             Text(milestone.milestoneType.displayTitle)
@@ -173,6 +209,15 @@ struct DayTimelineView: View {
                 .background(.ultraThinMaterial)
                 .clipShape(Capsule())
                 .shadow(color: .black.opacity(0.1), radius: 1)
+        }
+    }
+
+    private func memberColor(_ member: Member?) -> Color {
+        guard let member else { return .secondary }
+        switch member.role {
+        case .owner: return .blue
+        case .admin: return .purple
+        case .member: return .gray
         }
     }
 

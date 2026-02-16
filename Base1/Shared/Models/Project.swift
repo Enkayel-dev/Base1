@@ -56,9 +56,17 @@ public final class Project {
     @Relationship(deleteRule: .cascade, inverse: \ProjectMilestone.project)
     public var milestones: [ProjectMilestone] = []
 
+    /// Deprecated: Members are now assigned via milestones. 
+    /// This remains for schema compatibility but is no longer used for core UI.
     public var assignedMembers: [Member] = []
 
     // MARK: - Computed
+
+    /// The team members assigned to this project, derived from scheduled milestones.
+    public var teamMembers: [Member] {
+        let members = milestones.compactMap { $0.assignedMember }
+        return Array(Set(members)).sorted(by: { $0.displayName < $1.displayName })
+    }
 
     public var status: ProjectStatus {
         get { ProjectStatus(rawValue: statusRaw) ?? .planning }
