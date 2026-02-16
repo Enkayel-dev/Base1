@@ -19,10 +19,8 @@ struct AddScopeItemView: View {
 
     @State private var itemDescription = ""
     @State private var laborHours = ""
-    @State private var fixedCost = ""
-    @State private var costMarkup = ""
-    @State private var status: ScopeItemStatus = .pending
     @State private var notes = ""
+    @State private var selectedRole: MemberRole?
     @State private var selectedMember: Member?
 
     // MARK: - Resource Entries
@@ -54,6 +52,12 @@ struct AddScopeItemView: View {
         return allMembers.filter { $0.businessKey == key }
     }
 
+    /// Members filtered by selected role.
+    private var filteredMembers: [Member] {
+        guard let role = selectedRole else { return [] }
+        return businessMembers.filter { $0.role == role }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DrawerHeader(
@@ -69,9 +73,8 @@ struct AddScopeItemView: View {
                         descriptionSection
                         resourcesSection
                         laborSection
-                        fixedCostSection
                         costSection
-                        detailsSection
+                        notesSection
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 40)
@@ -82,7 +85,7 @@ struct AddScopeItemView: View {
     }
 
     private var canSave: Bool {
-        !itemDescription.isEmpty || !resourceEntries.isEmpty || !fixedCost.isEmpty || !laborHours.isEmpty
+        !itemDescription.isEmpty || !resourceEntries.isEmpty || !laborHours.isEmpty
     }
 
     // MARK: - Description Section
@@ -170,13 +173,12 @@ struct AddScopeItemView: View {
                         .onChange(of: selectedVariantResource) { _, newValue in
                             if let variant = newValue {
                                 pendingUnit = variant.unit
-                                // Auto-fill defaults from the resource
                                 if let waste = variant.defaultWasteFactor {
                                     pendingWasteFactor = "\(waste * 100 as NSDecimalNumber)"
                                 } else {
                                     pendingWasteFactor = ""
                                 }
-                                
+
                                 if let coats = variant.defaultCoats {
                                     pendingCoats = "\(coats)"
                                 } else {
@@ -192,12 +194,12 @@ struct AddScopeItemView: View {
                                 Text("Coverage: 1 \(res.unit.displayTitle) covers \(rate as NSDecimalNumber) \(cUnit.abbreviation)")
                                     .font(.caption)
                                     .foregroundStyle(.blue)
-                                
+
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Select Measurements")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
-                                    
+
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         HStack(spacing: 8) {
                                             ForEach(project.measurements) { m in
@@ -213,7 +215,7 @@ struct AddScopeItemView: View {
                                                         Text("(\(m.value as NSDecimalNumber) \(m.unit.abbreviation))")
                                                             .font(.caption2)
                                                             .opacity(0.8)
-                                                        
+
                                                         if pendingMeasurements.contains(m) {
                                                             Image(systemName: "checkmark.circle.fill")
                                                         }
@@ -239,8 +241,7 @@ struct AddScopeItemView: View {
                                     if let calc = temporaryCalculatedQuantity {
                                         let wasteStr = pendingWasteFactor.isEmpty ? "0" : pendingWasteFactor
                                         let coatsStr = pendingCoats.isEmpty ? "1" : pendingCoats
-                                        
-                                        // Calculate total area for display
+
                                         let totalArea: Decimal = pendingMeasurements.reduce(0) { sum, m in
                                             let converted = m.unit.convert(m.value, to: cUnit) ?? 0
                                             return sum + converted
@@ -250,7 +251,7 @@ struct AddScopeItemView: View {
                                             Text("Usage: \(calc as NSDecimalNumber) \(res.unit.abbreviation)")
                                                 .font(.headline)
                                                 .foregroundStyle(.blue)
-                                            
+
                                             Text("(at \(totalArea as NSDecimalNumber) \(cUnit.abbreviation) total, \(coatsStr) coat\(coatsStr == "1" ? "" : "s"), \(wasteStr)% waste)")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
@@ -319,19 +320,34 @@ struct AddScopeItemView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("Assigned Member", selection: $selectedMember) {
-                    Text("None").tag(Member?.none)
-                    ForEach(businessMembers) { member in
-                        HStack {
-                            Text(member.displayName)
-                            if let rate = member.hourlyRate {
-                                Text("(\(formatCurrency(rate))/hr)")
-                            }
-                        }
-                        .tag(Member?.some(member))
+                // Role picker
+                Picker("Role", selection: $selectedRole) {
+                    Text("Select Role").tag(MemberRole?.none)
+                    ForEach(MemberRole.allCases) { role in
+                        Text(role.displayTitle).tag(MemberRole?.some(role))
                     }
                 }
-                .pickerStyle(.menu)
+                .pickerStyle(.segmented)
+                .onChange(of: selectedRole) { _, _ in
+                    selectedMember = nil
+                }
+
+                // Member picker filtered by role
+                if selectedRole != nil {
+                    Picker("Assigned Member", selection: $selectedMember) {
+                        Text("Select Member").tag(Member?.none)
+                        ForEach(filteredMembers) { member in
+                            HStack {
+                                Text(member.displayName)
+                                if let rate = member.hourlyRate {
+                                    Text("(\(formatCurrency(rate))/hr)")
+                                }
+                            }
+                            .tag(Member?.some(member))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
             }
 
             Divider()
@@ -351,54 +367,31 @@ struct AddScopeItemView: View {
         }
     }
 
-    // MARK: - Fixed Cost Section
-
-    private var fixedCostSection: some View {
-        sectionCard {
-            LabeledTextField("Fixed Cost", text: $fixedCost, icon: "dollarsign", keyboardType: .decimalPad)
-
-            Text("For permits, subcontractor quotes, disposal fees, etc.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-    }
-
     // MARK: - Cost Section
 
     private var costSection: some View {
         sectionCard {
-            LabeledTextField("Cost Markup (%)", text: $costMarkup, icon: "percent", keyboardType: .decimalPad)
-
-            Divider()
-
             VStack(alignment: .leading, spacing: 4) {
                 Label("Estimated Total", systemImage: "dollarsign.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(formatCurrency(calculatedTotal))
                     .font(.headline)
+
+                let markupPct = businessManager.currentBusiness?.costMarkupPercentage
+                if let pct = markupPct, pct > 0 {
+                    Text("Includes \(pct as NSDecimalNumber)% markup")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
 
-    // MARK: - Details Section
+    // MARK: - Notes Section
 
-    private var detailsSection: some View {
+    private var notesSection: some View {
         sectionCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Status", systemImage: "flag")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker("Status", selection: $status) {
-                    ForEach(ScopeItemStatus.allCases) { s in
-                        Text(s.displayTitle).tag(s)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Divider()
-
             VStack(alignment: .leading, spacing: 8) {
                 Label("Notes", systemImage: "note.text")
                     .font(.caption)
@@ -431,21 +424,21 @@ struct AddScopeItemView: View {
 
         let cUnit = res.coverageUnit ?? .sqft
         var totalConvertedValue: Decimal = 0
-        
+
         for m in pendingMeasurements {
             if let converted = m.unit.convert(m.value, to: cUnit) {
                 totalConvertedValue += converted
             }
         }
-        
+
         if totalConvertedValue == 0 { return nil }
 
         let usageUnits = (totalConvertedValue / rate)
         let waste = 1 + ((Decimal(string: pendingWasteFactor) ?? (res.defaultWasteFactor ?? 0) * 100) / 100)
         let coats = Decimal(integerLiteral: Int(pendingCoats) ?? (res.defaultCoats ?? 1))
-        
+
         let inventoryQty = usageUnits * coats * waste
-        
+
         return inventoryQty
     }
 
@@ -465,20 +458,19 @@ struct AddScopeItemView: View {
             return hours * rate
         }()
 
-        let fixed = Decimal(string: fixedCost) ?? .zero
-        let subtotal = materialTotal + laborTotal + fixed
-        let markup = Decimal(string: costMarkup) ?? 0
-        return subtotal * (1 + (markup / 100))
+        let subtotal = materialTotal + laborTotal
+        let markupPct = businessManager.currentBusiness?.costMarkupPercentage ?? Decimal.zero
+        return subtotal * (1 + markupPct / 100)
     }
 
     // MARK: - Add Resource Entry
 
     private func addResourceEntry() {
         guard let resource = selectedVariantResource else { return }
-        
+
         let qty: Decimal
         let isOverridden: Bool
-        
+
         if let calc = temporaryCalculatedQuantity, pendingQuantity.isEmpty {
             qty = calc
             isOverridden = false
@@ -496,7 +488,7 @@ struct AddScopeItemView: View {
             coats: Int(pendingCoats),
             isQuantityOverridden: isOverridden
         ))
-        
+
         selectedVARIANT_RESET()
     }
 
@@ -515,18 +507,14 @@ struct AddScopeItemView: View {
     private func saveScopeItem() {
         guard let businessKey = businessManager.businessKey else { return }
 
-        let markupDecimal: Decimal? = Decimal(string: costMarkup).map { $0 / 100 }
-
         let scopeItem = ScopeItem(
             businessKey: businessKey,
             laborHours: Decimal(string: laborHours),
-            fixedCost: Decimal(string: fixedCost),
-            costMarkup: markupDecimal,
-            description: itemDescription.isEmpty ? nil : itemDescription,
-            status: status
+            description: itemDescription.isEmpty ? nil : itemDescription
         )
         scopeItem.notes = notes.isEmpty ? nil : notes
         scopeItem.project = project
+        scopeItem.assignedRole = selectedRole
         scopeItem.assignedMember = selectedMember
 
         modelContext.insert(scopeItem)

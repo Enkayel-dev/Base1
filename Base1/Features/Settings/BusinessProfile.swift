@@ -54,6 +54,26 @@ struct BusinessProfile: View {
                             LabeledTextField("Tax No.", text: $business.taxNumber.orEmpty, icon: "number")
                         }
 
+                        // MARK: - Pricing
+                        sectionCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Pricing", systemImage: "percent")
+                                    .font(.headline)
+
+                                TextField("0", value: Binding(
+                                    get: { business.costMarkupPercentage ?? Decimal.zero },
+                                    set: { business.costMarkupPercentage = $0 > 0 ? $0 : nil }
+                                ), format: .number)
+                                .keyboardType(.decimalPad)
+                                .font(.title3)
+                                .fontWeight(.semibold)
+
+                                Text("Cost markup percentage applied to all project estimates")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
                         // MARK: - Team
                         teamSection(business: business)
 

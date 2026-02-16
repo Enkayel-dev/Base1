@@ -23,16 +23,21 @@ public final class ProjectService {
     ///   - target: The new project to copy data into.
     public func duplicateTemplate(from template: Project, to target: Project) {
         let businessKey = target.businessKey
-        
+
+        // Copy project-level fixed cost from template
+        if target.fixedCost == nil, let templateFixedCost = template.fixedCost {
+            target.fixedCost = templateFixedCost
+        }
+
         // 1. Duplicate Scope Items
         for item in template.scopeItems {
             let newItem = ScopeItem(
                 businessKey: businessKey,
                 laborHours: item.laborHours,
-                fixedCost: item.fixedCost,
-                costMarkup: item.costMarkup,
                 description: item.itemDescription
             )
+            newItem.assignedRole = item.assignedRole
+            newItem.notes = item.notes
             newItem.project = target
             modelContext.insert(newItem)
             

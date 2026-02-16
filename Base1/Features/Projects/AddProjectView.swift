@@ -22,18 +22,18 @@ struct AddProjectView: View {
     @State private var projectDescription = ""
 
     @State private var selectedMembers: Set<PersistentIdentifier> = []
-    
+
     @State private var isTemplate = false
     @State private var newJobTypeName = ""
-    
+
     // MARK: - Variants
-    
+
     struct VariantDraft: Identifiable {
         let id = UUID()
         var name: String
         var description: String
     }
-    
+
     @State private var variants: [VariantDraft] = []
     @State private var draftVariantName = ""
     @State private var draftVariantDescription = ""
@@ -51,21 +51,42 @@ struct AddProjectView: View {
 
     // MARK: - Computed
 
+    /// The selected existing parent JobType (if any).
+    private var selectedParentJobType: JobType? {
+        guard let id = selectedParentJobTypeID else { return nil }
+        return allJobTypes.first { $0.persistentModelID == id }
+    }
+
     private var autoTitle: String {
         if isTemplate {
+            if let parent = selectedParentJobType {
+                return parent.name
+            }
             return newJobTypeName.isEmpty ? "New Template" : newJobTypeName
         }
-        guard let parentJobType = allJobTypes.first(where: { $0.persistentModelID == selectedParentJobTypeID }),
-              let client = allClients.first(where: { $0.persistentModelID == selectedClientID }) else { return "" }
-        
+        guard let client = allClients.first(where: { $0.persistentModelID == selectedClientID }),
+              let parentJobType = selectedParentJobType else { return "" }
         return "\(parentJobType.name) for \(client.displayName)"
     }
 
     private var canSave: Bool {
         if isTemplate {
+            // Editing existing parent — always valid
+            if selectedParentJobTypeID != nil { return true }
+            // Creating new parent — need a name
             return !newJobTypeName.isEmpty
         }
-        return selectedClientID != nil && selectedVariantID != nil
+
+        guard selectedClientID != nil else { return false }
+
+        if let parent = selectedParentJobType {
+            if parent.children.isEmpty {
+                return true // parent without variants
+            }
+            return selectedVariantID != nil
+        }
+
+        return false
     }
 
     var body: some View {
@@ -81,17 +102,17 @@ struct AddProjectView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         templateToggle
-                        
-                        if !isTemplate {
+
+                        if isTemplate {
+                            templateJobTypeSection
+                            variantsSection
+                            descriptionSection
+                        } else {
                             clientSection
                             jobTypeSection
                             titlePreview
                             descriptionSection
                             teamSection
-                        } else {
-                            templateNameSection
-                            variantsSection
-                            descriptionSection
                         }
                     }
                     .padding(.horizontal)
@@ -110,6 +131,10 @@ struct AddProjectView: View {
             .onChange(of: isTemplate) { _, newValue in
                 if newValue {
                     selectedClientID = nil
+                } else {
+                    selectedParentJobTypeID = nil
+                    newJobTypeName = ""
+                    variants = []
                 }
             }
         }
@@ -139,22 +164,80 @@ struct AddProjectView: View {
         }
     }
 
-    // MARK: - Template Name Section
-    
-    private var templateNameSection: some View {
+    // MARK: - Template Job Type Section
+
+    private var templateJobTypeSection: some View {
         sectionCard {
             VStack(alignment: .leading, spacing: 12) {
-                LabeledTextField("Job Type Name", text: $newJobTypeName, icon: "hammer")
+                Label("Job Type", systemImage: "wrench.and.screwdriver")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                let parents = allJobTypes.filter { $0.parent == nil }
+
+                if parents.isEmpty {
+                    // No existing parents — only allow new
+                    LabeledTextField("Job Type Name", text: $newJobTypeName, icon: "hammer")
+                } else {
+                    Picker("Job Type", selection: $selectedParentJobTypeID) {
+                        Text("New Job Type").tag(PersistentIdentifier?.none)
+                        ForEach(parents) { jt in
+                            Label(jt.name, systemImage: jt.icon).tag(PersistentIdentifier?.some(jt.persistentModelID))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: selectedParentJobTypeID) { _, _ in
+                        newJobTypeName = ""
+                        variants = []
+                    }
+
+                    // Show name field only when creating new
+                    if selectedParentJobTypeID == nil {
+                        LabeledTextField("Job Type Name", text: $newJobTypeName, icon: "hammer")
+                    }
+                }
             }
         }
     }
+
     // MARK: - Variants Section
-    
+
     private var variantsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Variants", systemImage: "square.stack.3d.down.right")
                 .font(.headline)
-            
+
+            // Show existing variants when editing an existing parent
+            if let parent = selectedParentJobType {
+                let existing = parent.children.sorted { $0.name < $1.name }
+                if !existing.isEmpty {
+                    VStack(spacing: 8) {
+                        ForEach(existing) { child in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(child.name)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                    if let desc = child.variantDescription {
+                                        Text(desc)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                    .font(.caption)
+                            }
+                            .padding()
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                }
+            }
+
+            // New variant drafts
             if !variants.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(variants) { variant in
@@ -183,12 +266,12 @@ struct AddProjectView: View {
                     }
                 }
             }
-            
+
             sectionCard {
                 VStack(spacing: 12) {
                     LabeledTextField("Variant Name", text: $draftVariantName, icon: "tag")
                     LabeledTextField("Variant Description", text: $draftVariantDescription, icon: "text.alignleft")
-                    
+
                     Button {
                         variants.append(VariantDraft(name: draftVariantName, description: draftVariantDescription))
                         draftVariantName = ""
@@ -205,21 +288,20 @@ struct AddProjectView: View {
         }
     }
 
-    // MARK: - Job Type Section
+    // MARK: - Job Type Section (Regular Project)
 
     private var jobTypeSection: some View {
         sectionCard {
             VStack(alignment: .leading, spacing: 16) {
-                // Parent Job Type Selection
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Job Type", systemImage: "wrench.and.screwdriver")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     let parents = allJobTypes.filter { $0.parent == nil }
-                    
+
                     if parents.isEmpty {
-                        Text("No job types yet — create them in Business Profile")
+                        Text("No job types yet — create one with Make Template")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
@@ -231,22 +313,20 @@ struct AddProjectView: View {
                         }
                         .pickerStyle(.menu)
                         .onChange(of: selectedParentJobTypeID) { _, _ in
-                            selectedVariantID = nil // Reset variant when parent changes
+                            selectedVariantID = nil
                         }
                     }
                 }
 
-                // Variant Selection
-                if let parentID = selectedParentJobTypeID,
-                   let parent = allJobTypes.first(where: { $0.persistentModelID == parentID }),
-                   !parent.children.isEmpty {
+                // Variant Selection (when parent has variants)
+                if let parent = selectedParentJobType, !parent.children.isEmpty {
                     Divider()
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Select Variant", systemImage: "square.stack.3d.down.right")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        
+
                         Picker("Variant", selection: $selectedVariantID) {
                             Text("Select a variant…").tag(PersistentIdentifier?.none)
                             ForEach(parent.children.sorted(by: { $0.name < $1.name })) { child in
@@ -276,8 +356,6 @@ struct AddProjectView: View {
             }
         }
     }
-
-
 
     // MARK: - Description Section
 
@@ -352,37 +430,27 @@ struct AddProjectView: View {
         guard let businessKey = businessManager.businessKey else { return }
 
         if isTemplate {
-            // 1. Create Parent JobType
-            let parentJobType = JobType(
-                businessKey: businessKey,
-                name: newJobTypeName,
-                parent: nil
-            )
-            parentJobType.business = businessManager.currentBusiness
-            modelContext.insert(parentJobType)
-            
-            // 2. Create Parent Template Project (Masters Scope)
-            let parentProject = Project(
-                businessKey: businessKey,
-                title: newJobTypeName,
-                description: projectDescription.isEmpty ? nil : projectDescription,
-                status: .template
-            )
-            parentProject.jobType = parentJobType
-            parentProject.business = businessManager.currentBusiness
-            modelContext.insert(parentProject)
-            
-            // 3. Create Variants
+            saveTemplate(businessKey: businessKey)
+        } else {
+            saveRegularProject(businessKey: businessKey)
+        }
+
+        dismiss()
+    }
+
+    private func saveTemplate(businessKey: String) {
+        if let existingParent = selectedParentJobType {
+            // Adding variants to an existing parent
             for varDraft in variants {
                 let variantJobType = JobType(
                     businessKey: businessKey,
                     name: varDraft.name,
                     variantDescription: varDraft.description.isEmpty ? nil : varDraft.description,
-                    parent: parentJobType
+                    parent: existingParent
                 )
                 variantJobType.business = businessManager.currentBusiness
                 modelContext.insert(variantJobType)
-                
+
                 let variantProject = Project(
                     businessKey: businessKey,
                     title: varDraft.name,
@@ -393,7 +461,6 @@ struct AddProjectView: View {
                 variantProject.business = businessManager.currentBusiness
                 modelContext.insert(variantProject)
 
-                // Create milestone
                 let milestone = ProjectMilestone(
                     businessKey: businessKey,
                     milestoneType: .created,
@@ -402,54 +469,106 @@ struct AddProjectView: View {
                 milestone.project = variantProject
                 modelContext.insert(milestone)
             }
-            
         } else {
-            // Regular Project Creation
-            let project = Project(
+            // Create new parent JobType + template project
+            let parentJobType = JobType(
                 businessKey: businessKey,
-                title: autoTitle,
+                name: newJobTypeName,
+                parent: nil
+            )
+            parentJobType.business = businessManager.currentBusiness
+            modelContext.insert(parentJobType)
+
+            let parentProject = Project(
+                businessKey: businessKey,
+                title: newJobTypeName,
                 description: projectDescription.isEmpty ? nil : projectDescription,
-                status: .planning,
-                startDate: nil,
-                dueDate: nil
+                status: .template
             )
+            parentProject.jobType = parentJobType
+            parentProject.business = businessManager.currentBusiness
+            modelContext.insert(parentProject)
 
-            project.client = allClients.first { $0.persistentModelID == selectedClientID }
-            project.business = businessManager.currentBusiness
+            // Create variants
+            for varDraft in variants {
+                let variantJobType = JobType(
+                    businessKey: businessKey,
+                    name: varDraft.name,
+                    variantDescription: varDraft.description.isEmpty ? nil : varDraft.description,
+                    parent: parentJobType
+                )
+                variantJobType.business = businessManager.currentBusiness
+                modelContext.insert(variantJobType)
 
-            if let variantJobType = allJobTypes.first(where: { $0.persistentModelID == selectedVariantID }) {
-                project.jobType = variantJobType
-                
-                // Deep Duplication from Template
-                if let templateProject = variantJobType.templateProject {
-                    let service = ProjectService(modelContext: modelContext)
-                    service.duplicateTemplate(from: templateProject, to: project)
-                }
+                let variantProject = Project(
+                    businessKey: businessKey,
+                    title: varDraft.name,
+                    description: varDraft.description.isEmpty ? nil : varDraft.description,
+                    status: .template
+                )
+                variantProject.jobType = variantJobType
+                variantProject.business = businessManager.currentBusiness
+                modelContext.insert(variantProject)
+
+                let milestone = ProjectMilestone(
+                    businessKey: businessKey,
+                    milestoneType: .created,
+                    date: .now
+                )
+                milestone.project = variantProject
+                modelContext.insert(milestone)
             }
+        }
+    }
 
-            // Promote lead to active
-            if let clientID = selectedClientID,
-               let client = allClients.first(where: { $0.persistentModelID == clientID }),
-               client.status == .lead {
-                client.status = .active
-                client.updatedAt = .now
+    private func saveRegularProject(businessKey: String) {
+        let project = Project(
+            businessKey: businessKey,
+            title: autoTitle,
+            description: projectDescription.isEmpty ? nil : projectDescription,
+            status: .planning,
+            startDate: nil,
+            dueDate: nil
+        )
+
+        project.client = allClients.first { $0.persistentModelID == selectedClientID }
+        project.business = businessManager.currentBusiness
+
+        if let variantJobType = allJobTypes.first(where: { $0.persistentModelID == selectedVariantID }) {
+            // Variant selected
+            project.jobType = variantJobType
+            if let templateProject = variantJobType.templateProject {
+                let service = ProjectService(modelContext: modelContext)
+                service.duplicateTemplate(from: templateProject, to: project)
             }
-
-            let assigned = allMembers.filter { selectedMembers.contains($0.persistentModelID) }
-            project.assignedMembers = assigned
-
-            modelContext.insert(project)
-
-            // Create milestone
-            let milestone = ProjectMilestone(
-                businessKey: businessKey,
-                milestoneType: .created,
-                date: .now
-            )
-            milestone.project = project
-            modelContext.insert(milestone)
+        } else if let parentJobType = selectedParentJobType {
+            // Parent with no variants — use parent directly
+            project.jobType = parentJobType
+            if let templateProject = parentJobType.templateProject {
+                let service = ProjectService(modelContext: modelContext)
+                service.duplicateTemplate(from: templateProject, to: project)
+            }
         }
 
-        dismiss()
+        // Promote lead to active
+        if let clientID = selectedClientID,
+           let client = allClients.first(where: { $0.persistentModelID == clientID }),
+           client.status == .lead {
+            client.status = .active
+            client.updatedAt = .now
+        }
+
+        let assigned = allMembers.filter { selectedMembers.contains($0.persistentModelID) }
+        project.assignedMembers = assigned
+
+        modelContext.insert(project)
+
+        let milestone = ProjectMilestone(
+            businessKey: businessKey,
+            milestoneType: .created,
+            date: .now
+        )
+        milestone.project = project
+        modelContext.insert(milestone)
     }
 }

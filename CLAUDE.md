@@ -26,18 +26,18 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 
 ## Patterns & Frameworks
 
-> **Year:** 2026 · **Xcode:** 26.2 · **macOS:** 26.2 · **iOS:** 26.2  
+> **Year:** 2026 · **Xcode:** 26.3 · **macOS:** 26.3 · **iOS:** 26.3  
 > **Philosophy:** Apple Native First — no third-party dependencies. All patterns follow modern Apple platform conventions.
 
 ### Frameworks
 
 | Framework | Version | Role |
 |-----------|---------|------|
-| **SwiftUI** | iOS 26.2 | Declarative UI — all views are `struct` conforming to `View` |
-| **SwiftData** | iOS 26.2 | Persistence — `@Model` macro for domain entities, `@Query` for reactive fetching |
-| **Observation** | iOS 26.2 | State management — `@Observable` macro replaces `ObservableObject`/`@Published` |
+| **SwiftUI** | iOS 26.3 | Declarative UI — all views are `struct` conforming to `View` |
+| **SwiftData** | iOS 26.3 | Persistence — `@Model` macro for domain entities, `@Query` for reactive fetching |
+| **Observation** | iOS 26.3 | State management — `@Observable` macro replaces `ObservableObject`/`@Published` |
 | **Swift** | 6.x | Language — strict concurrency, `@MainActor` isolation |
-| **Liquid Glass** | iOS 26.2 | Glassmorphism — dynamic materials and morphing containers (`GlassEffectContainer`) |
+| **Liquid Glass** | iOS 26.3 | Glassmorphism — dynamic materials and morphing containers (`GlassEffectContainer`) |
 
 ### Architecture: Modern MV (Model–View)
 
@@ -254,7 +254,7 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 | `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build, Repair). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates |
 | `ScopeItemTemplate.swift` | `ScopeItemTemplate` | Reusable scope item library entries linked to Resources. Fields: businessKey, name, defaultQuantity, defaultLaborHours?, defaultCostMarkup?, notes?, createdAt. Relationships: resource, business, jobType |
 | `WorkflowTemplate.swift` | `WorkflowTemplate`, `WorkflowStepTemplate`, `WorkflowCategory` | Reusable workflow blueprints. Has businessKey |
-| `ProjectMilestone.swift` | `ProjectMilestone`, `MilestoneType` | Project lifecycle events (created, site visit, estimate sent, etc.). Marked as dots on the schedule timeline. |
+| `ProjectMilestone.swift` | `ProjectMilestone`, `MilestoneType` | Project lifecycle events. **Schedulable types** (siteVisit, materialOrder, workStarted) appear as event blocks on the calendar timeline AND as schedulable rows in ProjectDetailView. **Auto milestones** (created, estimateSent, estimateApproved, workCompleted) appear only as dots on the project line. `isSchedulable` computed property distinguishes them. |
 | `SampleData.swift` | Extensions on all models | Preview/test data factories. All factories accept businessKey param |
 | `Schema/Base1SchemaV1.swift` | `Base1SchemaV1`, `Base1MigrationPlan` | SwiftData schema versioning |
 
@@ -314,8 +314,8 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
 | `Features/Clients/ClientDetailView.swift` | `ClientDetailView` | Clients | Client detail drawer — contact info, linked projects, appointments |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
-| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer. Queries active projects for timeline display. |
-| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, vertical project timeline lines with milestone dots on the left, positioned event blocks, overlap layout, now-line |
+| `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer. Empty state only shown when no appointments AND no active projects. |
+| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, vertical project lines with milestone dots, positioned event blocks (appointments + schedulable milestones), unified overlap layout, now-line |
 | `Features/Schedule/AddAppointmentView.swift` | `AddAppointmentView` | Schedule | Add appointment form — type, date/time, all-day, location, client/project linking, reminders |
 | `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
 | `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
@@ -323,7 +323,7 @@ JobType  1──* ScopeItemTemplate *──1 Resource
 | `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template |
 | `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — status badge, job type label, client name, date range, overdue indicator |
 | `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
-| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, assigned team section, scope items list, summary cards (cost, labor, inventory warnings) |
+| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, schedule section (Site Visit / Material Order / Project Work + project dates), scope items list, summary cards (cost, labor, inventory warnings) |
 | `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker, quantity, labor hours, cost markup, live cost estimate, status |
 | `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" x 11") estimate view for PDF generation |
 | `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | Drawer using `PDFView` and `ImageRenderer` to generate and display estimate PDFs |

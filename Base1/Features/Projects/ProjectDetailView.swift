@@ -122,37 +122,6 @@ struct ProjectDetailView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Divider()
-            
-            HStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("Start Date", systemImage: "calendar")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    DatePicker("Start", selection: Binding(
-                        get: { project.startDate ?? .now },
-                        set: { project.startDate = $0 }
-                    ), displayedComponents: .date)
-                    .labelsHidden()
-                    .scaleEffect(0.9)
-                    .frame(height: 32)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("Due Date", systemImage: "calendar.badge.clock")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    DatePicker("Due", selection: Binding(
-                        get: { project.dueDate ?? .now.addingTimeInterval(86400 * 7) },
-                        set: { project.dueDate = $0 }
-                    ), displayedComponents: .date)
-                    .labelsHidden()
-                    .scaleEffect(0.9)
-                    .frame(height: 32)
-                }
-                
-                Spacer()
-            }
         }
         .padding()
         .background(.thinMaterial)
@@ -249,9 +218,9 @@ struct ProjectDetailView: View {
                 .font(.headline)
 
             VStack(spacing: 8) {
-                // Predefined lifecycle stages
-                let displayTypes: [MilestoneType] = [.siteVisitDone, .estimateApproved, .workStarted, .workCompleted]
-                
+                // Schedulable milestones
+                let displayTypes: [MilestoneType] = [.siteVisit, .materialOrder, .workStarted]
+
                 ForEach(displayTypes) { type in
                     milestoneScheduleRow(type: type)
                 }
@@ -272,7 +241,7 @@ struct ProjectDetailView: View {
                     .frame(width: 32)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(type.displayTitle)
+                    Text(type == .workStarted ? "Project Work" : type.displayTitle)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
@@ -478,7 +447,28 @@ struct ProjectDetailView: View {
                 )
             }
 
-            if project.totalFixedCost > 0 {
+            // Fixed Cost (project-level)
+            if !project.isLocked {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Fixed Costs", systemImage: "dollarsign")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("0.00", value: Binding(
+                        get: { project.fixedCost ?? Decimal.zero },
+                        set: { project.fixedCost = $0 > 0 ? $0 : nil }
+                    ), format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    .keyboardType(.decimalPad)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+
+                    Text("For permits, subcontractor quotes, disposal fees, etc.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(.thinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if project.totalFixedCost > 0 {
                 summaryCard(
                     title: "Fixed Costs",
                     value: formatCurrency(project.totalFixedCost),

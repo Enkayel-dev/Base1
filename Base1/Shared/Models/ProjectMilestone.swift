@@ -23,7 +23,11 @@ public final class ProjectMilestone {
 
     // Computed
     public var milestoneType: MilestoneType {
-        get { MilestoneType(rawValue: milestoneTypeRaw) ?? .created }
+        get {
+            // Backward compat: old "siteVisitDone" maps to .siteVisit
+            if milestoneTypeRaw == "siteVisitDone" { return .siteVisit }
+            return MilestoneType(rawValue: milestoneTypeRaw) ?? .created
+        }
         set { milestoneTypeRaw = newValue.rawValue }
     }
 
@@ -49,10 +53,11 @@ public final class ProjectMilestone {
 
 public enum MilestoneType: String, Codable, CaseIterable, Identifiable {
     case created           // auto — project saved
-    case siteVisitDone     // manual — mark site visit complete
+    case siteVisit         // schedulable — site visit date
+    case materialOrder     // schedulable — material order date
     case estimateSent      // auto — PDF generated / locked
-    case estimateApproved  // manual — client confirms
-    case workStarted       // manual — first day on site
+    case estimateApproved  // auto milestone — client confirms
+    case workStarted       // schedulable — project work date
     case workCompleted     // auto — status → completed
     case invoiceSent       // future — when invoice feature lands
     case invoicePaid       // future
@@ -62,7 +67,8 @@ public enum MilestoneType: String, Codable, CaseIterable, Identifiable {
     public var displayTitle: String {
         switch self {
         case .created: "Project Created"
-        case .siteVisitDone: "Site Visit Done"
+        case .siteVisit: "Site Visit"
+        case .materialOrder: "Material Order"
         case .estimateSent: "Estimate Sent"
         case .estimateApproved: "Estimate Approved"
         case .workStarted: "Work Started"
@@ -72,10 +78,19 @@ public enum MilestoneType: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Types that appear as schedulable items in Project Detail and as event blocks on the calendar.
+    public var isSchedulable: Bool {
+        switch self {
+        case .siteVisit, .materialOrder, .workStarted: true
+        default: false
+        }
+    }
+
     public var systemImage: String {
         switch self {
         case .created: "plus.circle.fill"
-        case .siteVisitDone: "camera.fill"
+        case .siteVisit: "camera.fill"
+        case .materialOrder: "shippingbox.fill"
         case .estimateSent: "doc.text.fill"
         case .estimateApproved: "checkmark.circle.fill"
         case .workStarted: "hammer.fill"

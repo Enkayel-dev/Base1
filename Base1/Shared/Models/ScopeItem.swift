@@ -20,6 +20,7 @@ public final class ScopeItem {
     public var costMarkup: Decimal?
     public var sortOrder: Int
     public var statusRaw: String
+    public var assignedRoleRaw: String?
     public var notes: String?
 
     public var createdAt: Date
@@ -35,9 +36,30 @@ public final class ScopeItem {
 
     // MARK: - Computed
 
+    /// Status is derived automatically from the project's materialOrder milestone.
     public var status: ScopeItemStatus {
-        get { ScopeItemStatus(rawValue: statusRaw) ?? .pending }
+        get {
+            guard let milestone = project?.milestones.first(where: { $0.milestoneType == .materialOrder }) else {
+                return .pending
+            }
+            let now = Date.now
+            if let endDate = milestone.endDate, now >= endDate {
+                return .fulfilled
+            }
+            if now >= milestone.date {
+                return .ordered
+            }
+            return .pending
+        }
         set { statusRaw = newValue.rawValue }
+    }
+
+    public var assignedRole: MemberRole? {
+        get {
+            guard let raw = assignedRoleRaw else { return nil }
+            return MemberRole(rawValue: raw)
+        }
+        set { assignedRoleRaw = newValue?.rawValue }
     }
 
     public var materialCost: Decimal {
@@ -50,14 +72,7 @@ public final class ScopeItem {
     }
 
     public var estimatedCost: Decimal {
-        let material = materialCost
-        let labor = laborCost ?? Decimal.zero
-        let fixed = fixedCost ?? Decimal.zero
-        let subtotal = material + labor + fixed
-        if let markup = costMarkup {
-            return subtotal * (1 + markup)
-        }
-        return subtotal
+        materialCost + (laborCost ?? Decimal.zero)
     }
 
     public var hasInventoryIssues: Bool {

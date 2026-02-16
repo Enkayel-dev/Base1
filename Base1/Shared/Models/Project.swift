@@ -21,6 +21,7 @@ public final class Project {
     public var dueDate: Date?
     public var completedDate: Date?
     public var notes: String?
+    public var fixedCost: Decimal?
 
     public var createdAt: Date
     public var updatedAt: Date
@@ -62,10 +63,15 @@ public final class Project {
 
     // MARK: - Computed
 
-    /// The team members assigned to this project, derived from scheduled milestones.
+    /// The team members assigned to this project, derived from milestones and scope items.
     public var teamMembers: [Member] {
-        let members = milestones.compactMap { $0.assignedMember }
-        return Array(Set(members)).sorted(by: { $0.displayName < $1.displayName })
+        var members = Set(milestones.compactMap { $0.assignedMember })
+        for item in scopeItems {
+            if let member = item.assignedMember {
+                members.insert(member)
+            }
+        }
+        return Array(members).sorted(by: { $0.displayName < $1.displayName })
     }
 
     public var status: ProjectStatus {
@@ -89,7 +95,10 @@ public final class Project {
     }
 
     public var totalScopeCost: Decimal {
-        scopeItems.reduce(Decimal.zero) { $0 + $1.estimatedCost }
+        let subtotal = scopeItems.reduce(Decimal.zero) { $0 + $1.estimatedCost }
+        let markupPct = business?.costMarkupPercentage ?? Decimal.zero
+        let withMarkup = subtotal * (1 + markupPct / 100)
+        return withMarkup + (fixedCost ?? Decimal.zero)
     }
 
     public var totalMaterialCost: Decimal {
@@ -105,7 +114,7 @@ public final class Project {
     }
 
     public var totalFixedCost: Decimal {
-        scopeItems.compactMap { $0.fixedCost }.reduce(Decimal.zero, +)
+        fixedCost ?? Decimal.zero
     }
 
     public var hasInventoryIssues: Bool {

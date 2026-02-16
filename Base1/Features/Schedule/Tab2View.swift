@@ -78,7 +78,7 @@ struct Tab2View: View {
             dateSelector
             allDayBanner
 
-            if timedAppointments.isEmpty && allDayAppointments.isEmpty {
+            if timedAppointments.isEmpty && allDayAppointments.isEmpty && activeProjectsForDay.isEmpty {
                 EmptyScheduleView()
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {

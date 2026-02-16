@@ -24,6 +24,9 @@ public final class Business {
     @Attribute(.externalStorage)
     public var logoData: Data?
 
+    /// Business-wide cost markup as a percentage (e.g. 15 for 15%).
+    public var costMarkupPercentage: Decimal?
+
     public var createdAt: Date
 
     // MARK: - Relationships
