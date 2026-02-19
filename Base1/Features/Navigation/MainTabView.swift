@@ -33,7 +33,7 @@ struct MainTabView: View {
                     drawerRouter.dismiss()
                 }) {
                     if let destination = drawerRouter.currentDrawer {
-                        DrawerViewFactory.view(for: destination)
+                        DrawerViewFactory(destination: destination)
                     }
                 }
                 .transition(.move(edge: .trailing))

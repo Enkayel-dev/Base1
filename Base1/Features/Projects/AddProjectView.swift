@@ -57,6 +57,10 @@ struct AddProjectView: View {
         return allJobTypes.first { $0.persistentModelID == id }
     }
 
+    private var sortedParentJobTypeChildren: [JobType] {
+        selectedParentJobType?.children.sorted { $0.name < $1.name } ?? []
+    }
+
     private var autoTitle: String {
         if isTemplate {
             if let parent = selectedParentJobType {
@@ -231,7 +235,7 @@ struct AddProjectView: View {
                             }
                             .padding()
                             .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                         }
                     }
                 }
@@ -262,7 +266,7 @@ struct AddProjectView: View {
                         }
                         .padding()
                         .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                     }
                 }
             }
@@ -329,7 +333,7 @@ struct AddProjectView: View {
 
                         Picker("Variant", selection: $selectedVariantID) {
                             Text("Select a variant…").tag(PersistentIdentifier?.none)
-                            ForEach(parent.children.sorted(by: { $0.name < $1.name })) { child in
+                            ForEach(sortedParentJobTypeChildren) { child in
                                 Text(child.name).tag(PersistentIdentifier?.some(child.persistentModelID))
                             }
                         }
@@ -421,7 +425,7 @@ struct AddProjectView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     // MARK: - Save

@@ -71,7 +71,7 @@ struct InviteMemberView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     private func saveMember() {

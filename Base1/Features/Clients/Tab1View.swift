@@ -10,7 +10,6 @@ import SwiftData
 
 struct Tab1View: View {
     @State private var selectedFilter: FilterOption = .all
-    @State private var clientService = ClientService()
 
     @Environment(BusinessManager.self) private var businessManager
     @Environment(DrawerRouter.self) private var drawerRouter
@@ -40,10 +39,7 @@ struct Tab1View: View {
             LiquidGlassFilterPicker(selectedFilter: $selectedFilter)
                 .padding(.horizontal)
 
-            let filteredClients = clientService.clients(
-                from: allClients,
-                filter: selectedFilter
-            )
+            let filteredClients = filteredClients(allClients, filter: selectedFilter)
 
             if filteredClients.isEmpty {
                 EmptyClientsView()

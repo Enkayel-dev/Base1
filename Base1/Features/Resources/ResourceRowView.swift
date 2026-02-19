@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ResourceRowView: View {
     let resource: Resource
@@ -53,12 +54,11 @@ struct ResourceRowView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         .contentShape(Rectangle())
         .onTapGesture {
-            if resource.isMaterialType {
-                drawerRouter.present(.materialVariants(resource))
-            }
+            guard resource.isMaterialType else { return }
+            drawerRouter.present(.materialVariants(resource.persistentModelID))
         }
     }
 
@@ -183,9 +183,7 @@ struct ResourceRowView: View {
     }
 
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }
 
@@ -275,12 +273,10 @@ struct MaterialVariantsSheet: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }

@@ -14,9 +14,7 @@ struct AppointmentRowView: View {
         if appointment.isAllDay {
             return "All Day"
         }
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return "\(formatter.string(from: appointment.startDate)) – \(formatter.string(from: appointment.endDate))"
+        return "\(appointment.startDate.formatted(date: .omitted, time: .shortened)) – \(appointment.endDate.formatted(date: .omitted, time: .shortened))"
     }
 
     var body: some View {
@@ -64,7 +62,7 @@ struct AppointmentRowView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     private var iconColor: Color {

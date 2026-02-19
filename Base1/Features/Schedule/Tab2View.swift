@@ -116,7 +116,7 @@ struct Tab2View: View {
 
     private var dateSelector: some View {
         ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     ForEach(dateRange, id: \.self) { date in
                         datePill(date)
@@ -125,6 +125,7 @@ struct Tab2View: View {
                 }
                 .padding(.horizontal)
             }
+            .scrollIndicators(.never)
             .onAppear {
                 let today = Calendar.current.startOfDay(for: .now)
                 proxy.scrollTo(today, anchor: .center)
@@ -172,9 +173,7 @@ struct Tab2View: View {
     }
 
     private func dayOfWeek(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: date).uppercased()
+        date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
     }
 
     // MARK: - All Day Banner
@@ -182,7 +181,7 @@ struct Tab2View: View {
     @ViewBuilder
     private var allDayBanner: some View {
         if !allDayAppointments.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
+            ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     ForEach(allDayAppointments) { appt in
                         HStack(spacing: 6) {
@@ -201,6 +200,7 @@ struct Tab2View: View {
                 }
                 .padding(.horizontal)
             }
+            .scrollIndicators(.never)
             .padding(.bottom, 4)
         }
     }

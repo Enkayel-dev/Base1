@@ -149,7 +149,7 @@ struct WorkflowProgressBar: View {
                             .strokeBorder(.white.opacity(0.3), lineWidth: 1)
                     }
                     .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .glassEffect(.regular, in: .circle)
                     .glassEffectID("progress-handle", in: glassNS)
                     .offset(x: (trackWidth * progress) - (DesignConstants.WorkflowCard.handleSize / 2))
                     .animation(.spring(response: 0.4), value: progress)

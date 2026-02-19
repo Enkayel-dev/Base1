@@ -19,14 +19,13 @@ SwiftUI + SwiftData business management app with animated mesh gradient backgrou
 ## Build & Run
 - **Platform:** iOS (SwiftUI, SwiftData)
 - **Xcode project:** `Base1.xcodeproj`
-
 - **No package manager dependencies** — pure Apple frameworks
 
 ---
 
 ## Patterns & Frameworks
 
-> **Year:** 2026 · **Xcode:** 26.3 · **macOS:** 26.3 · **iOS:** 26.3  
+> **Year:** 2026 · **Xcode:** 26.3 · **macOS:** 26.3 · **iOS:** 26.3
 > **Philosophy:** Apple Native First — no third-party dependencies. All patterns follow modern Apple platform conventions.
 
 ### Frameworks
@@ -49,9 +48,9 @@ Base1 uses the **MV (Model–View) pattern** — Apple's preferred approach for 
 - A ViewModel layer adds indirection without benefit when SwiftUI already manages view lifecycle and state diffing
 - `@Query` provides reactive, filtered data directly in the View — no ViewModel needed to wrap it
 
-#### Pattern: `@Observable` Services as Shared State
+#### Pattern: `@MainActor @Observable` Services as Shared State
 
-Services are `@Observable` classes injected into the environment from the app entry point. Views read from them directly.
+All `@Observable` services that drive UI state must be marked `@MainActor`. Services are created once at the app entry point and injected via `.environment()`. Views read from them directly.
 
 ```swift
 // Shared/Services/BusinessManager.swift
@@ -69,12 +68,28 @@ final class BusinessManager {
 ```
 
 ```swift
-// Features/Clients/ClientsView.swift  (View reads directly from service)
-struct ClientsView: View {
+// Features/Clients/Tab1View.swift  (View reads directly from service)
+struct Tab1View: View {
     @Environment(BusinessManager.self) private var businessManager
     @Query(sort: \Client.createdAt, order: .reverse)
     private var allClients: [Client]
     // ...
+}
+```
+
+#### Pattern: Stateless Free Functions for Simple Filtering
+
+Services that only filter or transform data (no mutable state) are **top-level free functions**, not `@Observable` classes. This eliminates unnecessary object allocation and avoids the anti-pattern of stateless `@Observable` classes.
+
+```swift
+// Shared/Services/ClientService.swift
+func filteredClients(_ allClients: [Client], filter: FilterOption) -> [Client] {
+    switch filter {
+    case .all:      return allClients
+    case .lead:     return allClients.filter { $0.status == .lead }
+    case .active:   return allClients.filter { $0.status == .active }
+    case .closed:   return allClients.filter { $0.status == .closed }
+    }
 }
 ```
 
@@ -101,14 +116,14 @@ Files are grouped by **feature** (Clients, Workflow, Settings, etc.) rather than
 ```
 Features/
 ├── Clients/          ← Tab1View, AddClientView, ClientRowView, ClientDetailView, EmptyClientsView
-├── Schedule/         ← Tab2View, AddAppointmentView, AppointmentRowView, EmptyScheduleView
-├── Projects/         ← Tab3View, AddProjectView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView
+├── Schedule/         ← Tab2View, AddAppointmentView, AddScheduleView, AppointmentRowView, DayTimelineView, EmptyScheduleView
+├── Projects/         ← Tab3View, AddProjectView, AddMeasurementView, AddProjectPhotoView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView, PDFPreviewView, ProjectEstimatePDFView
 ├── Resources/        ← Tab4View, AddEquipmentView, AddMaterialView, AddVehicleView, AddToolView, ResourceRowView, EmptyResourcesView
 ├── Finances/         ← Tab5View (placeholder)
 ├── Workflow/         ← WorkflowModels, WorkflowService, WorkflowMiniCard, WorkflowViewFactory (stub)
 ├── Background/       ← AnimatedMeshBackground, MeshScheme, BackgroundState, BackgroundService, BackgroundCoordinator (unused)
 ├── Navigation/       ← MainTabView, TabRouter, DrawerRouter, DrawerViewFactory, BottomBarView, CustomBottomTabBar, SearchBar, SearchState, BusinessLogo, SettingsButton
-└── Settings/         ← SettingsView, BusinessProfile, MemberRowView, InviteMemberView, JobTypeListView, AddJobTypeView, JobTypeDetailView, AddScopeItemTemplateView
+└── Settings/         ← SettingsView, BusinessProfile, MemberRowView, MemberDetailView, InviteMemberView
 ```
 
 #### Pattern: Environment Injection from App Root
@@ -140,7 +155,7 @@ Custom tab switching using offset calculations rather than native `TabView`. Ena
 
 ```swift
 // Features/Navigation/Components/TabRouter.swift
-@Observable
+@MainActor @Observable
 final class TabRouter {
     var selectedTab: Int = 0
     var isSettingsActive: Bool = false
@@ -158,7 +173,7 @@ final class TabRouter {
 
 #### Pattern: Centralized Design Constants
 
-All spacing, sizing, and animation values live in a single `DesignConstants` enum to avoid magic numbers.
+All spacing, sizing, and animation values live in a single `DesignConstants` enum to avoid magic numbers. Card corners use `DesignConstants.Card.cornerRadius` — never hardcode `12`.
 
 ```swift
 // Shared/Design/DesignConstants.swift
@@ -166,6 +181,9 @@ enum DesignConstants {
     enum BottomBar {
         static let cornerRadius: CGFloat = 48
         static let horizontalPadding: CGFloat = 8
+    }
+    enum Card {
+        static let cornerRadius: CGFloat = 12
     }
     enum Animation {
         static let tabSwitchResponse: Double = 0.35
@@ -176,60 +194,74 @@ enum DesignConstants {
 
 #### Pattern: DrawerRouter (Centralized Modal Presentation)
 
-All modal content uses a centralized `DrawerRouter` (@Observable service) instead of `.sheet()`. The `SideDrawer` component slides from the right, occupies the center 1/3 of screen height, and uses `.ultraThinMaterial`. Drawers render as an overlay on `MainTabView` — outside the offset-based tab ZStack — so they always cover the full screen regardless of tab position.
+All modal content uses a centralized `DrawerRouter` (`@MainActor @Observable` service) instead of `.sheet()`. The `SideDrawer` component slides from the right, occupies the center 1/3 of screen height, and uses `.ultraThinMaterial`. Drawers render as an overlay on `MainTabView` — outside the offset-based tab ZStack — so they always cover the full screen regardless of tab position.
 
 **DrawerRouter** manages a stack of `DrawerDestination` enum values. Views call `drawerRouter.present(.destination)` to open drawers. The stack supports nesting (drawer opens another drawer). `DrawerViewFactory` maps enum cases to SwiftUI views.
+
+**Critical:** `DrawerDestination` associated values use `PersistentIdentifier` (never `@Model` objects directly). `DrawerViewFactory` is a `View` struct that re-fetches models from `@Environment(\.modelContext)` using `modelContext.registeredModel(for:)`.
 
 ```swift
 // Feature view — present a drawer via the router
 @Environment(DrawerRouter.self) private var drawerRouter
 
+// Static destinations
 Button { drawerRouter.present(.addClient) }
 
-// Item-based — pass model as associated value
-.onTapGesture { drawerRouter.present(.clientDetail(client)) }
+// Item-based — pass PersistentIdentifier, not the model object
+Button { drawerRouter.present(.clientDetail(client.persistentModelID)) }
 
-// Content view — dismiss via environment action (unchanged)
+// Content view — dismiss via environment action
 @Environment(\.dismissDrawer) private var dismiss
 ```
 
 **Why centralized, not per-view:**
 - Tab views use offset-based transitions; `.overlay`-based drawers would shift with the tab content
-- Nested drawers (e.g., JobTypeList > JobTypeDetail > AddScopeItemTemplate) need full-screen rendering
+- Nested drawers (e.g., ProjectDetail > AddScopeItem, ProjectDetail > PDFPreview) need full-screen rendering
 - Single point of control for all drawer animations, z-ordering, and lifecycle
 
 #### Pattern: Liquid Glass & Morphing UI
 
 Base1 leverages the **Liquid Glass framework (iOS 26+)** for premium, fluid UI elements. This involves using `GlassEffectContainer` to group multiple glass views and enable morphing transitions.
 
-**Key Components:**
-- **`GlassEffectContainer`**: A container that blends multiple glass elements together and coordinates morphing animations.
-- **`.glassEffect()`**: Modifier to apply Liquid Glass materials (e.g., `.regular.interactive()`).
-- **`.glassEffectID(_:in:)`**: Used with `@Namespace` to identify elements for morphing transitions.
+**Key Rules:**
+- Only apply `.interactive()` to tappable/focusable elements. Decorative elements use `.regular` only.
+- Separate `@Namespace` variables for `glassEffectID` and `matchedGeometryEffect` — never share them.
+- Apply `.glassEffect()` **after** all layout and visual modifiers (padding, frame, etc.).
+- Never combine `.background(.ultraThinMaterial)` with `GlassEffectContainer` — they conflict.
 
-**Implementation Example:**
 ```swift
 GlassEffectContainer(spacing: 8) {
-    HStack {
+    HStack(spacing: 8) {
         ForEach(options) { option in
-            Button { /* select */ } label: {
+            Button { selected = option } label: {
                 Text(option.title)
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .glassEffect(selected == option ? .regular.interactive() : .clear.interactive(), in: .capsule)
                     .glassEffectID(option.id, in: glassNS)
             }
+            .buttonStyle(.plain)
         }
     }
 }
 ```
 
-**Why Liquid Glass:**
-- Provides a sense of depth and fluidity beyond standard `ultraThinMaterial`.
-- Allows UI elements (like filter bubbles) to "melt" and reform as they move between states or across rows.
-- Highly performant rendering on iOS 26+ hardware.
-
 #### Pattern: Multi-Tenancy via `businessKey`
 
 Every domain model carries a `businessKey` field. All queries and factories accept `businessKey` as a parameter, enabling future multi-business support.
+
+#### Pattern: Date & Number Formatting
+
+Use Swift's `.formatted()` API directly — never allocate `DateFormatter` or `NumberFormatter` instances in view body or computed properties.
+
+```swift
+// Dates
+date.formatted(date: .medium, time: .omitted)
+date.formatted(date: .omitted, time: .shortened)
+date.formatted(.dateTime.weekday(.abbreviated))
+
+// Currency (Decimal)
+value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+```
 
 ---
 
@@ -245,13 +277,17 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 |------|------|---------|
 | `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates/members/jobTypes/scopeItemTemplates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, taxNumber?, logoData?, createdAt |
 | `Client.swift` | `Client`, `ClientStatus` | Customer with status (lead/active/closed). Has businessKey |
-| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, computed totalScopeCost, totalLaborHours, hasInventoryIssues. No priority field. **Has `isLocked` flag to prevent edits after estimate generation.** |
+| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, measurements, photos, computed totalScopeCost, totalLaborHours, hasInventoryIssues. **Has `isLocked` flag to prevent edits after estimate generation.** |
 | `Invoice.swift` | `Invoice`, `InvoiceStatus` | Billing (draft/sent/paid/overdue/cancelled). Has businessKey |
 | `Appointment.swift` | `Appointment`, `AppointmentType` | Scheduling (consultation/siteVisit/meeting/followUp/delivery). Has businessKey |
 | `Resource.swift` | `Resource`, `ResourceCategory` | Equipment/materials/vehicles/tools with category-specific fields. Equipment: equipmentMaterials relationship. Material: materialTypeName, variantLabel, parentMaterial/materialVariants self-referential parent-child. Vehicle: vehicleMake, vehicleModel, startingKilometers, serviceNotes. Tool: assignedVehicle relationship, isShopTool. Common: businessKey, scopeItems relationship, computed allocatedQuantity, availableQuantity, isMaterialType, isMaterialVariant, toolLocationLabel, vehicleDisplayLabel |
-| `ScopeItem.swift` | `ScopeItem`, `ScopeItemStatus` | Project scoping line items — bridges Project ↔ Resource. Fields: quantityNeeded, laborHours, costMarkup, status (pending/ordered/fulfilled). Computed: estimatedCost, inventoryShortfall (global allocation). Has businessKey |
+| `ScopeItem.swift` | `ScopeItem`, `ScopeItemStatus` | Project scoping line items. Fields: laborHours, description, assignedRole, notes, status (pending/ordered/fulfilled). Has `scopeItemResources` relationship (many resources via `ScopeItemResource`). Computed: estimatedCost. Has businessKey |
+| `ScopeItemResource.swift` | `ScopeItemResource` | Join table between `ScopeItem` and `Resource`. Fields: quantity (`Decimal`), unit (`UnitOfMeasure`), businessKey. Relationships: scopeItem, resource |
+| `UnitOfMeasure.swift` | `UnitOfMeasure` | Enum of all units (area, length, volume, count, weight, time, etc.) with `abbreviation`, `category`, and `convert(_:to:)` for unit conversion |
+| `ProjectMeasurement.swift` | `ProjectMeasurement` | Room/area measurements linked to a project. Fields: businessKey, name, value (`Decimal`), unit (`UnitOfMeasure`), notes?. Relationship: project |
+| `ProjectPhoto.swift` | `ProjectPhoto` | Photo attached to a project. Fields: businessKey, imageData (`Data`?), caption?. Relationship: project |
 | `Member.swift` | `Member`, `MemberRole`, `InviteStatus` | Team members with roles (owner/admin/member). Fields: businessKey, email, displayName, roleRaw, inviteStatusRaw, invitedAt, acceptedAt?, createdAt, updatedAt. Relationships: business, assignedProjects (many-to-many with Project). Computed: role, inviteStatus, initials |
-| `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build, Repair). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates |
+| `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates, children/parent (self-referential hierarchy), templateProject |
 | `ScopeItemTemplate.swift` | `ScopeItemTemplate` | Reusable scope item library entries linked to Resources. Fields: businessKey, name, defaultQuantity, defaultLaborHours?, defaultCostMarkup?, notes?, createdAt. Relationships: resource, business, jobType |
 | `WorkflowTemplate.swift` | `WorkflowTemplate`, `WorkflowStepTemplate`, `WorkflowCategory` | Reusable workflow blueprints. Has businessKey |
 | `ProjectMilestone.swift` | `ProjectMilestone`, `MilestoneType` | Project lifecycle events. **Schedulable types** (siteVisit, materialOrder, workStarted) appear as event blocks on the calendar timeline AND as schedulable rows in ProjectDetailView. **Auto milestones** (created, estimateSent, estimateApproved, workCompleted) appear only as dots on the project line. `isSchedulable` computed property distinguishes them. |
@@ -262,10 +298,11 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 ```
 Business 1──* Client, Project, Resource, WorkflowTemplate, Member, JobType, ScopeItemTemplate
 Client   1──* Project, Appointment, Invoice, Workflow
-Project  *──* Resource (legacy)
 Project  *──* Member (assigned team)
-Project  1──* ScopeItem *──1 Resource
-Project  1──* Invoice, Appointment, Workflow
+Project  1──* ScopeItem 1──* ScopeItemResource *──1 Resource
+Project  1──* ProjectMeasurement
+Project  1──* ProjectPhoto
+Project  1──* Invoice, Appointment, Workflow, ProjectMilestone
 WorkflowTemplate 1──* WorkflowStepTemplate
 WorkflowTemplate 1──* Workflow (instances)
 Workflow 1──* WorkflowStep
@@ -273,108 +310,112 @@ Resource(Equipment) *──* Resource(Material) (equipmentMaterials / usedByEqui
 Resource(Material)  1──* Resource(Material) (parentMaterial / materialVariants, cascade)
 Resource(Tool)      *──1 Resource(Vehicle) (assignedVehicle / assignedTools)
 JobType  1──* ScopeItemTemplate *──1 Resource
+JobType  1──* JobType (parent / children hierarchy)
+JobType  0──1 Project (templateProject)
 ```
 
 ### Services (`Shared/Services/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `BusinessManager.swift` | `BusinessManager` (@Observable) | Business entity CRUD, multi-tenancy, bootstrapping |
-| `ClientService.swift` | `ClientService` (@Observable) | Client filtering by status |
-| `AppointmentService.swift` | `AppointmentService` (@Observable), `ScheduleFilter` | Appointment filtering (all/upcoming/past/cancelled) and day grouping |
+| `BusinessManager.swift` | `BusinessManager` (`@MainActor @Observable`) | Business entity CRUD, multi-tenancy, bootstrapping |
+| `ProjectService.swift` | `ProjectService` (`@MainActor` class) | Project template duplication — `duplicateTemplate(from:to:)` copies scope items, measurements, photos. `syncScopeFromParentToVariants(_:)` propagates parent template scope to child job type variants |
+| `ClientService.swift` | Free functions | `filteredClients(_:filter:)` — filters `[Client]` by `FilterOption`. No class, no state. |
+| `AppointmentService.swift` | Free functions + `ScheduleFilter` | `filteredAppointments(_:filter:)` and `appointmentsGroupedByDay(_:)`. `ScheduleFilter` enum (all/upcoming/past/cancelled) defined here. |
 
 ### UI Layer
 
 #### Navigation & Chrome (`Features/Navigation/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `MainTabView.swift` | `MainTabView` | Root view — ZStack with background, tab content, drawer overlay, nav buttons |
-| `Components/TabRouter.swift` | `TabRouter` (@Observable) | Tab selection state, offset-based slide animations |
-| `Components/DrawerRouter.swift` | `DrawerRouter` (@Observable), `DrawerDestination` | Centralized drawer presentation — stack-based, supports nesting. All views call `drawerRouter.present(.destination)`. Added `.projectEstimate` for PDF preview. |
-| `Components/DrawerViewFactory.swift` | `DrawerViewFactory` | Maps `DrawerDestination` enum cases to SwiftUI content views |
+| `MainTabView.swift` | `MainTabView` | Root view — ZStack with background, tab content (via `GeometryReader` for offset math), drawer overlay, nav buttons |
+| `Components/TabRouter.swift` | `TabRouter` (`@MainActor @Observable`) | Tab selection state, offset-based slide animations |
+| `Components/DrawerRouter.swift` | `DrawerRouter` (`@MainActor @Observable`), `DrawerDestination` | Centralized drawer presentation — stack-based, supports nesting. `DrawerDestination` uses `PersistentIdentifier` for all model-associated values. |
+| `Components/DrawerViewFactory.swift` | `DrawerViewFactory` (`View` struct) | Maps `DrawerDestination` to SwiftUI views. Uses `@Environment(\.modelContext)` + `registeredModel(for:)` to re-fetch models from identifiers. |
 | `Components/BottomBarView.swift` | `BottomBarView` | Bottom bar container (search bar, workflow card, tab bar) |
 | `Components/CustomBottomTabBar.swift` | `CustomBottomTabBar` | 5-tab bar with matched geometry selection indicator |
 | `Components/SearchBar.swift` | `SearchBar` | Search input with auto-focus |
-| `Components/SearchState.swift` | `SearchState` (@Observable) | Search text and active state |
+| `Components/SearchState.swift` | `SearchState` (`@MainActor @Observable`) | Search text and active state |
 | `Components/BusinessLogo.swift` | `BusinessLogo` | Top-left profile button |
 | `Components/SettingsButton.swift` | `SettingsButton` | Top-right settings button |
 
 #### Workflow System (`Features/Workflow/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `WorkflowModels.swift` | `Workflow`, `WorkflowStep` (@Model) | Runtime workflow instances (SwiftData) |
-| `WorkflowService.swift` | `WorkflowService` (@Observable) | Workflow lifecycle (start/pause/skip/complete) |
+| `WorkflowModels.swift` | `Workflow`, `WorkflowStep` (`@Model`) | Runtime workflow instances (SwiftData) |
+| `WorkflowService.swift` | `WorkflowService` (`@MainActor @Observable`) | Workflow lifecycle (start/pause/skip/complete) |
 | `WorkflowMiniCard.swift` | `WorkflowMiniCard`, `WorkflowProgressBar` | Compact workflow display in bottom bar |
 | `WorkflowViewFactory.swift` | `WorkflowViewFactory` | Maps step viewKey strings to SwiftUI views (stub) |
 
 #### Feature Views
 | File | Type | Feature | Purpose |
 |------|------|---------|---------|
-| `Features/Clients/Tab1View.swift` | `Tab1View` | Clients | Client list with filter picker + add client side drawer |
+| `Features/Clients/Tab1View.swift` | `Tab1View` | Clients | Client list with filter picker + add client side drawer. Uses `filteredClients(_:filter:)` free function. |
 | `Features/Clients/AddClientView.swift` | `AddClientView` | Clients | Add client form |
-| `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row |
-| `Features/Clients/ClientDetailView.swift` | `ClientDetailView` | Clients | Client detail drawer — contact info, linked projects, appointments |
+| `Features/Clients/ClientRowView.swift` | `ClientRowView` | Clients | Client list row — tappable via `Button` → `.clientDetail` drawer |
+| `Features/Clients/ClientDetailView.swift` | `ClientDetailView` | Clients | Client detail drawer — contact info, linked projects, appointments. Uses `sortedProjects` and `sortedAppointments` computed properties. |
 | `Features/Clients/EmptyClientsView.swift` | `EmptyClientsView` | Clients | Empty state |
 | `Features/Schedule/Tab2View.swift` | `Tab2View` | Schedule | Calendar day view with date selector, all-day banner, DayTimelineView + add appointment side drawer. Empty state only shown when no appointments AND no active projects. |
-| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, vertical project lines with milestone dots, positioned event blocks (appointments + schedulable milestones), unified overlap layout, now-line |
+| `Features/Schedule/DayTimelineView.swift` | `DayTimelineView` | Schedule | Apple Calendar-style day timeline — hour grid, vertical project lines with milestone dots, positioned event blocks (appointments + schedulable milestones), unified overlap layout, now-line. Uses `GeometryReader` for pixel-accurate event layout. |
 | `Features/Schedule/AddAppointmentView.swift` | `AddAppointmentView` | Schedule | Add appointment form — type, date/time, all-day, location, client/project linking, reminders |
+| `Features/Schedule/AddScheduleView.swift` | `AddScheduleView` | Schedule | Schedule a milestone event — horizontal member picker scroll, date/time, duration |
 | `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
 | `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
 | `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project side drawer |
-| `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template |
-| `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — status badge, job type label, client name, date range, overdue indicator |
+| `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template. Uses `sortedParentJobTypeChildren` computed property. |
+| `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — tappable via `Button` → `.projectDetail` drawer. Status badge, job type label, client name, date range, overdue indicator, estimate button. |
 | `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
-| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, schedule section (Site Visit / Material Order / Project Work + project dates), scope items list, summary cards (cost, labor, inventory warnings) |
-| `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker, quantity, labor hours, cost markup, live cost estimate, status |
-| `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" x 11") estimate view for PDF generation |
-| `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | Drawer using `PDFView` and `ImageRenderer` to generate and display estimate PDFs |
-| `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icon, quantity, cost, status badge, inventory shortfall warning |
+| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, schedule section, scope items list, measurements, photos, summary cards (cost, labor, inventory warnings). Uses `sortedScopeItems`, `sortedMeasurements`, `sortedPhotos` computed properties. |
+| `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker with multi-resource support (`ScopeItemResource` join), quantity per resource, unit of measure, measurement chip selector (horizontal scroll), labor hours, live cost estimate |
+| `Features/Projects/AddMeasurementView.swift` | `AddMeasurementView` | Projects | Add measurement form — name, value, unit picker |
+| `Features/Projects/AddProjectPhotoView.swift` | `AddProjectPhotoView` | Projects | Add photo form — PhotosPicker integration, caption |
+| `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" × 11" = 612×792pt) estimate view for PDF generation. Uses static font sizes and `Color` values (not adaptive). |
+| `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | PDF generation and preview drawer — `ImageRenderer` snapshot on `@MainActor`, `CGContext` PDF file written via `Task.detached`, displayed via `PDFKit.PDFView`. Share via `ShareLink`. |
+| `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icons, quantity, cost, status badge, inventory shortfall warning |
 | `Features/Resources/Tab4View.swift` | `Tab4View`, `ResourceListSheet` | Resources | 2x2 category grid (Equipment/Materials/Vehicles/Tools) — each card has Add and Open buttons. ResourceListSheet shows filtered list per category |
-| `Features/Resources/AddEquipmentView.swift` | `AddEquipmentView` | Resources | Add equipment form — name, description, materials used (multi-select), quantity, unit cost, availability, notes |
-| `Features/Resources/AddMaterialView.swift` | `AddMaterialView` | Resources | Add material form — two modes: "New Type" (creates material type) or "Add Variant" (picks parent type, enters variant label, quantity, unit cost) |
-| `Features/Resources/AddVehicleView.swift` | `AddVehicleView` | Resources | Add vehicle form — name, make, model, starting kilometers, service notes, availability |
-| `Features/Resources/AddToolView.swift` | `AddToolView` | Resources | Add tool form — name, location (Shop/Vehicle segmented), quantity, notes |
-| `Features/Resources/ResourceRowView.swift` | `ResourceRowView` | Resources | Resource list row — category-specific detail: equipment shows linked materials, material shows variant info, vehicle shows make/model/km, tool shows location |
+| `Features/Resources/AddEquipmentView.swift` | `AddEquipmentView` | Resources | Add equipment form |
+| `Features/Resources/AddMaterialView.swift` | `AddMaterialView` | Resources | Add material form — "New Type" or "Add Variant" modes |
+| `Features/Resources/AddVehicleView.swift` | `AddVehicleView` | Resources | Add vehicle form |
+| `Features/Resources/AddToolView.swift` | `AddToolView` | Resources | Add tool form |
+| `Features/Resources/ResourceRowView.swift` | `ResourceRowView` | Resources | Resource list row — category-specific detail |
 | `Features/Resources/EmptyResourcesView.swift` | `EmptyResourcesView` | Resources | Empty state |
 | `Features/Finances/Tab5View.swift` | `Tab5View` | Finances | Finances tab (placeholder) |
 | `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen (mock) |
 | `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo, team management section, job types & templates link |
-| `Features/Settings/MemberRowView.swift` | `MemberRowView` | Settings | Team member list row — avatar initials, name, email, role badge, invite status |
+| `Features/Settings/MemberRowView.swift` | `MemberRowView` | Settings | Team member list row — avatar initials, name, email, role badge, invite status. Tappable via `Button` → `.memberDetail` drawer. |
+| `Features/Settings/MemberDetailView.swift` | `MemberDetailView` | Settings | Member detail drawer — role, invite status, assigned projects with milestone timeline. Uses `sortedMilestoneProjects` and `sortedMilestones(for:)` computed helpers. |
 | `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form side drawer — email, display name, role picker (admin/member) |
-| `Features/Settings/JobTypeListView.swift` | `JobTypeListView` | Settings | Job type list — manage job types and their scope item templates |
-| `Features/Settings/AddJobTypeView.swift` | `AddJobTypeView` | Settings | Add job type form — name, icon picker |
-| `Features/Settings/JobTypeDetailView.swift` | `JobTypeDetailView` | Settings | Job type detail — shows scope item templates, add new ones |
-| `Features/Settings/AddScopeItemTemplateView.swift` | `AddScopeItemTemplateView` | Settings | Add scope item template — resource picker, default quantity, labor hours, cost markup |
 
 #### Shared Components (`Shared/UI/Components/`)
 | File | Type | Purpose |
 |------|------|---------|
 | `LabeledTextField.swift` | `LabeledTextField` | Shared labeled text field with icon + keyboard type |
 | `BindingExtensions.swift` | `Binding<String?>.orEmpty` | Optional string binding helper |
-| `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control — reusable across any feature with a `Filterable` enum |
-| `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction`, `NavigationBackgroundCleaner` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Includes `NavigationBackgroundCleaner` (UIViewRepresentable) that walks the responder chain to clear `NavigationStack`'s opaque background so the material shows through. Used by `MainTabView` to render content from `DrawerRouter`. Content views use `@Environment(\.dismissDrawer)` to dismiss |
+| `DrawerHeader.swift` | `DrawerHeader` | Reusable header component for drawer views — title, optional subtitle, dismiss button |
+| `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control. Uses separate `@Namespace` for `glassEffectID` vs `matchedGeometryEffect` to avoid conflicts. |
+| `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction`, `NavigationBackgroundCleaner` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Content views use `@Environment(\.dismissDrawer)` to dismiss. |
 
 #### Design System (`Shared/Design/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `DesignConstants.swift` | `DesignConstants` | Centralized spacing/sizing/animation constants |
+| `DesignConstants.swift` | `DesignConstants` | Centralized spacing/sizing/animation constants. Includes `Card.cornerRadius = 12` — use everywhere instead of hardcoded `12`. |
 
 #### Background Animation (`Features/Background/`)
 | File | Type | Purpose |
 |------|------|---------|
 | `AnimatedMeshBackground.swift` | `AnimatedMeshBackground` | 3x3 MeshGradient with animated center point |
 | `Components/MeshScheme.swift` | `MeshScheme` | Color scheme enum (gold/amber/blue/crimson/mint/violet/teal) |
-| `Components/BackgroundState.swift` | `BackgroundState` (@Observable) | Current scheme + transition progress |
-| `Components/BackgroundService.swift` | `BackgroundService` | Maps tab index to MeshScheme |
-| `Components/BackgroundCoordinator.swift` | `BackgroundCoordinator` (@Observable) | Transition coordination (currently unused) |
+| `Components/BackgroundState.swift` | `BackgroundState` (`@MainActor @Observable`) | Current scheme + transition progress |
+| `Components/BackgroundService.swift` | `BackgroundService` | Pure value mapper — maps tab index to `MeshScheme`. No state, no `@MainActor`. |
+| `Components/BackgroundCoordinator.swift` | `BackgroundCoordinator` (`@MainActor @Observable`) | Transition coordination (currently unused) |
 
 ### Tab Mapping
 | Index | Tab | View | Background | Color |
 |-------|-----|------|------------|-------|
-| 0 | Clients | ClientsView | gold | Gold |
-| 1 | Schedule | ScheduleView | amber | Amber |
-| 2 | Projects | ProjectsView | blue | Blue |
-| 3 | Resources | ResourcesView | crimson | Crimson |
-| 4 | Finances | FinancesView | mint | Mint |
+| 0 | Clients | Tab1View | gold | Gold |
+| 1 | Schedule | Tab2View | amber | Amber |
+| 2 | Projects | Tab3View | blue | Blue |
+| 3 | Resources | Tab4View | crimson | Crimson |
+| 4 | Finances | Tab5View | mint | Mint |
 | — | Settings | SettingsView | violet | Violet |
 | — | Profile | BusinessProfile | teal | Teal |
 
@@ -394,6 +435,10 @@ Base1/
 │   │   ├── Appointment.swift
 │   │   ├── Resource.swift
 │   │   ├── ScopeItem.swift
+│   │   ├── ScopeItemResource.swift
+│   │   ├── UnitOfMeasure.swift
+│   │   ├── ProjectMeasurement.swift
+│   │   ├── ProjectPhoto.swift
 │   │   ├── Member.swift
 │   │   ├── JobType.swift
 │   │   ├── ScopeItemTemplate.swift
@@ -404,12 +449,14 @@ Base1/
 │   │       └── Base1SchemaV1.swift
 │   ├── Services/
 │   │   ├── BusinessManager.swift
+│   │   ├── ProjectService.swift
 │   │   ├── ClientService.swift
 │   │   └── AppointmentService.swift
 │   ├── Design/
 │   │   └── DesignConstants.swift
 │   └── UI/
 │       └── Components/
+│           ├── DrawerHeader.swift
 │           ├── LabeledTextField.swift
 │           ├── BindingExtensions.swift
 │           ├── LiquidGlassFilterPicker.swift
@@ -448,16 +495,22 @@ Base1/
     ├── Schedule/
     │   ├── Tab2View.swift
     │   ├── AddAppointmentView.swift
+    │   ├── AddScheduleView.swift
     │   ├── AppointmentRowView.swift
+    │   ├── DayTimelineView.swift
     │   └── EmptyScheduleView.swift
     ├── Projects/
     │   ├── Tab3View.swift
     │   ├── AddProjectView.swift
-    │   ├── ProjectRowView.swift
-    │   ├── ProjectDetailView.swift
+    │   ├── AddMeasurementView.swift
+    │   ├── AddProjectPhotoView.swift
     │   ├── AddScopeItemView.swift
-    │   ├── ScopeItemRowView.swift
-    │   └── EmptyProjectsView.swift
+    │   ├── EmptyProjectsView.swift
+    │   ├── PDFPreviewView.swift
+    │   ├── ProjectDetailView.swift
+    │   ├── ProjectEstimatePDFView.swift
+    │   ├── ProjectRowView.swift
+    │   └── ScopeItemRowView.swift
     ├── Resources/
     │   ├── Tab4View.swift
     │   ├── AddEquipmentView.swift
@@ -472,9 +525,6 @@ Base1/
         ├── SettingsView.swift
         ├── BusinessProfile.swift
         ├── MemberRowView.swift
-        ├── InviteMemberView.swift
-        ├── JobTypeListView.swift
-        ├── AddJobTypeView.swift
-        ├── JobTypeDetailView.swift
-        └── AddScopeItemTemplateView.swift
+        ├── MemberDetailView.swift
+        └── InviteMemberView.swift
 ```

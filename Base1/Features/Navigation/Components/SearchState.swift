@@ -1,7 +1,7 @@
 import SwiftUI
 import Observation
 
-@Observable
+@MainActor @Observable
 final class SearchState {
     var text: String = ""
     var isActive: Bool = false

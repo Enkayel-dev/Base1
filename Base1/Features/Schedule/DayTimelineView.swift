@@ -474,9 +474,7 @@ struct DayTimelineView: View {
     }
 
     private func timeText(_ appointment: Appointment) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return "\(formatter.string(from: appointment.startDate)) – \(formatter.string(from: appointment.endDate))"
+        "\(appointment.startDate.formatted(date: .omitted, time: .shortened)) – \(appointment.endDate.formatted(date: .omitted, time: .shortened))"
     }
 
     private func typeColor(_ type: AppointmentType) -> Color {

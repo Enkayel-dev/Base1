@@ -11,7 +11,7 @@ import Observation
 
 // MARK: - Workflow Service
 
-@Observable
+@MainActor @Observable
 public final class WorkflowService {
 
     // Currently active workflow

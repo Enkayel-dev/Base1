@@ -14,6 +14,14 @@ struct MemberDetailView: View {
     @Environment(\.dismissDrawer) private var dismiss
     @Environment(DrawerRouter.self) private var drawerRouter
 
+    private var sortedMilestoneProjects: [Project] {
+        member.milestonesByProject.keys.sorted { $0.title < $1.title }
+    }
+
+    private func sortedMilestones(for project: Project) -> [ProjectMilestone] {
+        member.milestonesByProject[project]?.sorted { $0.date > $1.date } ?? []
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DrawerHeader(
@@ -96,7 +104,7 @@ struct MemberDetailView: View {
             }
             .padding()
             .background(.thinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         }
     }
 
@@ -118,10 +126,10 @@ struct MemberDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
                 VStack(spacing: 12) {
-                    ForEach(member.milestonesByProject.keys.sorted(by: { $0.title < $1.title })) { project in
+                    ForEach(sortedMilestoneProjects) { project in
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Text(project.title)
@@ -134,7 +142,7 @@ struct MemberDetailView: View {
                                     .monospacedDigit()
                             }
                             
-                            ForEach(member.milestonesByProject[project]?.sorted(by: { $0.date > $1.date }) ?? []) { milestone in
+                            ForEach(sortedMilestones(for: project)) { milestone in
                                 HStack {
                                     milestone.milestoneType.icon
                                         .font(.caption2)

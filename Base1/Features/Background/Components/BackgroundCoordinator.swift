@@ -6,7 +6,7 @@
 import SwiftUI
 import Observation
 
-@Observable
+@MainActor @Observable
 final class BackgroundCoordinator {
     
     private let service: BackgroundService

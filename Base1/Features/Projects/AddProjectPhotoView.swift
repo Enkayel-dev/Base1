@@ -41,7 +41,7 @@ struct AddProjectPhotoView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxHeight: 300)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                                 .overlay(alignment: .topTrailing) {
                                     Button {
                                         self.imageData = nil
@@ -64,9 +64,9 @@ struct AddProjectPhotoView: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 200)
                                 .background(.white.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius)
                                         .strokeBorder(.secondary, style: StrokeStyle(lineWidth: 1, dash: [5]))
                                 }
                             }
@@ -103,7 +103,7 @@ struct AddProjectPhotoView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     private func save() {

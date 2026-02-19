@@ -15,6 +15,18 @@ struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismissDrawer) private var dismiss
 
+    private var sortedMeasurements: [ProjectMeasurement] {
+        project.measurements.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var sortedScopeItems: [ScopeItem] {
+        project.scopeItems.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var sortedPhotos: [ProjectPhoto] {
+        project.photos.sorted { $0.createdAt > $1.createdAt }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             DrawerHeader(
@@ -61,12 +73,12 @@ struct ProjectDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
+                ScrollView(.horizontal) {
                     HStack(spacing: 12) {
                         Button {
-                            drawerRouter.present(.projectEstimate(project))
+                            drawerRouter.present(.projectEstimate(project.persistentModelID))
                         } label: {
                             VStack(alignment: .leading, spacing: 8) {
                                 Image(systemName: "doc.text.fill")
@@ -85,10 +97,11 @@ struct ProjectDetailView: View {
                             .padding()
                             .frame(width: 140, height: 140, alignment: .topLeading)
                             .background(.thinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                         }
                     }
                 }
+                .scrollIndicators(.never)
             }
         }
     }
@@ -125,7 +138,7 @@ struct ProjectDetailView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     // MARK: - Client Section
@@ -137,7 +150,7 @@ struct ProjectDetailView: View {
 
             if let client = project.client {
                 Button {
-                    drawerRouter.present(.clientDetail(client))
+                    drawerRouter.present(.clientDetail(client.persistentModelID))
                 } label: {
                     HStack(spacing: 12) {
                         Circle()
@@ -171,7 +184,7 @@ struct ProjectDetailView: View {
                     }
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                 }
             } else {
                 Text("No client linked")
@@ -180,7 +193,7 @@ struct ProjectDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             }
         }
     }
@@ -205,7 +218,7 @@ struct ProjectDetailView: View {
                 }
                 .padding()
                 .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             }
         }
     }
@@ -232,7 +245,7 @@ struct ProjectDetailView: View {
         let milestone = project.milestones.first { $0.milestoneType == type }
         
         return Button {
-            drawerRouter.present(.addSchedule(project, type))
+            drawerRouter.present(.addSchedule(project.persistentModelID, type))
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: type.systemImage)
@@ -275,7 +288,7 @@ struct ProjectDetailView: View {
             }
             .padding()
             .background(.thinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         }
         .buttonStyle(.plain)
     }
@@ -290,7 +303,7 @@ struct ProjectDetailView: View {
                 Spacer()
                 if !project.isLocked {
                     Button {
-                        drawerRouter.present(.addMeasurement(project))
+                        drawerRouter.present(.addMeasurement(project.persistentModelID))
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(.blue)
@@ -305,10 +318,10 @@ struct ProjectDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
                 VStack(spacing: 8) {
-                    ForEach(project.measurements.sorted(by: { $0.createdAt > $1.createdAt })) { m in
+                    ForEach(sortedMeasurements) { m in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(m.name)
@@ -328,7 +341,7 @@ struct ProjectDetailView: View {
                         }
                         .padding()
                         .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                     }
                 }
             }
@@ -347,7 +360,7 @@ struct ProjectDetailView: View {
 
                 if !project.isLocked {
                     Button {
-                        drawerRouter.present(.addScopeItem(project))
+                        drawerRouter.present(.addScopeItem(project.persistentModelID))
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(.blue)
@@ -362,9 +375,9 @@ struct ProjectDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
-                ForEach(project.scopeItems.sorted(by: { $0.createdAt > $1.createdAt })) { item in
+                ForEach(sortedScopeItems) { item in
                     ScopeItemRowView(scopeItem: item)
                 }
             }
@@ -381,7 +394,7 @@ struct ProjectDetailView: View {
                 Spacer()
                 if !project.isLocked {
                     Button {
-                        drawerRouter.present(.addProjectPhoto(project))
+                        drawerRouter.present(.addProjectPhoto(project.persistentModelID))
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .foregroundStyle(.blue)
@@ -396,21 +409,22 @@ struct ProjectDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
+                ScrollView(.horizontal) {
                     HStack(spacing: 12) {
-                        ForEach(project.photos.sorted(by: { $0.createdAt > $1.createdAt })) { photo in
+                        ForEach(sortedPhotos) { photo in
                             if let data = photo.imageData, let uiImage = UIImage(data: data) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 120, height: 120)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                             }
                         }
                     }
                 }
+                .scrollIndicators(.never)
             }
         }
     }
@@ -467,7 +481,7 @@ struct ProjectDetailView: View {
                 }
                 .padding()
                 .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else if project.totalFixedCost > 0 {
                 summaryCard(
                     title: "Fixed Costs",
@@ -487,7 +501,7 @@ struct ProjectDetailView: View {
                 }
                 .padding()
                 .background(.orange.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             }
 
             // MARK: Team section moved here to be part of the summary flow
@@ -513,7 +527,7 @@ struct ProjectDetailView: View {
                     .padding()
                     .background(isValid ? Color.blue : Color.secondary.opacity(0.3))
                     .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                 }
                 .disabled(!isValid)
                 
@@ -555,7 +569,7 @@ struct ProjectDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     // MARK: - Helpers
@@ -572,8 +586,6 @@ struct ProjectDetailView: View {
     }
 
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }

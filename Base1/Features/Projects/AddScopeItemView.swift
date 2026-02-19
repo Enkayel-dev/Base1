@@ -113,8 +113,7 @@ struct AddScopeItemView: View {
                     .foregroundStyle(.secondary)
 
                 // Existing entries
-                ForEach(resourceEntries.indices, id: \.self) { index in
-                    let entry = resourceEntries[index]
+                ForEach(resourceEntries) { entry in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(entry.resource.name)
@@ -136,14 +135,14 @@ struct AddScopeItemView: View {
                         }
                         Spacer()
                         Button {
-                            resourceEntries.remove(at: index)
+                            resourceEntries.removeAll { $0.id == entry.id }
                         } label: {
                             Image(systemName: "minus.circle.fill")
                                 .foregroundStyle(.red)
                         }
                     }
 
-                    if index < resourceEntries.count - 1 {
+                    if entry.id != resourceEntries.last?.id {
                         Divider()
                     }
                 }
@@ -200,7 +199,7 @@ struct AddScopeItemView: View {
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
 
-                                    ScrollView(.horizontal, showsIndicators: false) {
+                                    ScrollView(.horizontal) {
                                         HStack(spacing: 8) {
                                             ForEach(project.measurements) { m in
                                                 Button {
@@ -229,6 +228,7 @@ struct AddScopeItemView: View {
                                             }
                                         }
                                     }
+                                    .scrollIndicators(.never)
                                 }
                                 .padding(.vertical, 4)
 
@@ -411,7 +411,7 @@ struct AddScopeItemView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     // MARK: - Temporary Calculation
@@ -540,9 +540,7 @@ struct AddScopeItemView: View {
     // MARK: - Helpers
 
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }
 

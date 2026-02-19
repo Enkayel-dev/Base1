@@ -5,6 +5,7 @@
 //  Created by Nicholas Lachapelle on 2026-02-11.
 //
 
+import SwiftData
 import SwiftUI
 
 struct MemberRowView: View {
@@ -15,7 +16,7 @@ struct MemberRowView: View {
 
     var body: some View {
         Button {
-            drawerRouter.present(.memberDetail(member))
+            drawerRouter.present(.memberDetail(member.persistentModelID))
         } label: {
             HStack(spacing: 12) {
                 // Avatar

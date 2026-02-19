@@ -12,7 +12,7 @@
 import SwiftUI
 import Observation
 
-@Observable
+@MainActor @Observable
 public final class BackgroundState {
     public var scheme: MeshScheme = .blue
     public var transitionProgress: Double = 1.0

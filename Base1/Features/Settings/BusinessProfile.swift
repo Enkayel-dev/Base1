@@ -133,18 +133,12 @@ struct BusinessProfile: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(sortedMembers.enumerated()), id: \.element.id) { index, member in
                         MemberRowView(member: member)
-                            .onTapGesture {
-                                if member.inviteStatus == .pending {
-                                    member.inviteStatus = .accepted
-                                    member.acceptedAt = .now
-                                    member.updatedAt = .now
-                                }
-                            }
+                            .onTapGesture { acceptInviteIfPending(member) }
                         if index < sortedMembers.count - 1 {
                             Divider()
                         }
@@ -152,7 +146,7 @@ struct BusinessProfile: View {
                 }
                 .padding()
                 .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             }
         }
     }
@@ -201,6 +195,15 @@ struct BusinessProfile: View {
         }
     }
 
+    // MARK: - Actions
+
+    private func acceptInviteIfPending(_ member: Member) {
+        guard member.inviteStatus == .pending else { return }
+        member.inviteStatus = .accepted
+        member.acceptedAt = .now
+        member.updatedAt = .now
+    }
+
     // MARK: - Section Card
 
     private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -209,6 +212,6 @@ struct BusinessProfile: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 }

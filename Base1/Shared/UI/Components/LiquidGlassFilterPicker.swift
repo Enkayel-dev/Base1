@@ -17,7 +17,8 @@ protocol Filterable: CaseIterable, Identifiable, Hashable where AllCases: Random
 
 struct LiquidGlassFilterPicker<Filter: Filterable>: View {
     @Binding var selectedFilter: Filter
-    @Namespace private var glassNS
+    @Namespace private var glassNS       // Used by glassEffectID for Liquid Glass morphing
+    @Namespace private var selectionNS   // Used by matchedGeometryEffect for selection highlight
 
     var body: some View {
         let filters = Array(Filter.allCases)
@@ -43,8 +44,6 @@ struct LiquidGlassFilterPicker<Filter: Filterable>: View {
                 .padding(.horizontal, 6)
             }
             .padding(.vertical, 8)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
     }
 
@@ -68,7 +67,7 @@ struct LiquidGlassFilterPicker<Filter: Filterable>: View {
                     if isSelected {
                         Capsule()
                             .fill(.blue.gradient)
-                            .matchedGeometryEffect(id: "selection", in: glassNS)
+                            .matchedGeometryEffect(id: "selection", in: selectionNS)
                     }
                 }
         }

@@ -148,7 +148,7 @@ struct ScopeItemRowView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
 
     // MARK: - Helpers
@@ -170,8 +170,6 @@ struct ScopeItemRowView: View {
     }
 
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }

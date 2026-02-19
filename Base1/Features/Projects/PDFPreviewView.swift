@@ -22,17 +22,28 @@ struct PDFPreviewView: View {
                 title: "Project Estimate",
                 leadingText: "Close",
                 leadingAction: { dismiss() },
-                trailingText: "Share",
-                trailingAction: {
-                    if let url = pdfURL {
-                        sharePDF(url: url)
-                    }
-                }
+                trailingText: nil,
+                trailingAction: nil
             )
             
             ZStack {
                 if let url = pdfURL {
-                    PDFKitView(url: url)
+                    VStack(spacing: 12) {
+                        PDFKitView(url: url)
+                        ShareLink(
+                            item: url,
+                            preview: SharePreview(
+                                "\(project.title) Estimate",
+                                image: Image(systemName: "doc.fill")
+                            )
+                        ) {
+                            Label("Share PDF", systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.glass)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
                 } else if isLoading {
                     ProgressView("Generating Estimate...")
                 } else {
@@ -45,49 +56,40 @@ struct PDFPreviewView: View {
             }
         }
         .task {
-            generatePDF()
+            await generatePDF()
         }
     }
     
-    @MainActor
-    private func generatePDF() {
-        let renderer = ImageRenderer(content: ProjectEstimatePDFView(project: project, business: business))
-        
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Estimate-\(project.title).pdf")
-        
-        renderer.render { size, context in
-            var box = CGRect(origin: .zero, size: size)
-            
-            guard let pdfContext = CGContext(url as CFURL, mediaBox: &box, nil) else {
-                isLoading = false
-                return
-            }
-            
-            pdfContext.beginPDFPage(nil)
-            context(pdfContext)
-            pdfContext.endPDFPage()
-            pdfContext.closePDF()
-            
-            self.pdfURL = url
-            self.isLoading = false
+    // Capture snapshot on @MainActor (ImageRenderer requirement),
+    // then write the PDF file off the main thread.
+    private func generatePDF() async {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Estimate-\(project.title).pdf")
+
+        // Step 1 — render snapshot on main actor
+        let snapshot: CGImage? = await MainActor.run {
+            let renderer = ImageRenderer(
+                content: ProjectEstimatePDFView(project: project, business: business)
+            )
+            renderer.proposedSize = ProposedViewSize(width: 612, height: 792)
+            renderer.scale = 2.0
+            return renderer.cgImage
         }
-    }
-    
-    private func sharePDF(url: URL) {
-        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            
-            // For iPad
-            if let popover = activityVC.popoverPresentationController {
-                popover.sourceView = rootVC.view
-                popover.sourceRect = CGRect(x: windowScene.screen.bounds.width / 2, y: windowScene.screen.bounds.height / 2, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            
-            rootVC.present(activityVC, animated: true)
-        }
+
+        // Step 2 — write PDF file off main thread
+        let success = await Task.detached(priority: .userInitiated) {
+            guard let image = snapshot else { return false }
+            var box = CGRect(x: 0, y: 0, width: 612, height: 792)
+            guard let ctx = CGContext(url as CFURL, mediaBox: &box, nil) else { return false }
+            ctx.beginPDFPage(nil)
+            ctx.draw(image, in: box)
+            ctx.endPDFPage()
+            ctx.closePDF()
+            return true
+        }.value
+
+        pdfURL = success ? url : nil
+        isLoading = false
     }
 }
 

@@ -12,20 +12,20 @@ enum DrawerDestination: Identifiable, Equatable {
 
     // Clients
     case addClient
-    case clientDetail(Client)
-    case memberDetail(Member)
+    case clientDetail(PersistentIdentifier)
+    case memberDetail(PersistentIdentifier)
 
     // Schedule
     case addAppointment
 
     // Projects
     case addProject
-    case projectDetail(Project)
-    case addScopeItem(Project)
-    case addMeasurement(Project)
-    case addProjectPhoto(Project)
-    case projectEstimate(Project)
-    case addSchedule(Project, MilestoneType)
+    case projectDetail(PersistentIdentifier)
+    case addScopeItem(PersistentIdentifier)
+    case addMeasurement(PersistentIdentifier)
+    case addProjectPhoto(PersistentIdentifier)
+    case projectEstimate(PersistentIdentifier)
+    case addSchedule(PersistentIdentifier, MilestoneType)
 
     // Resources
     case addEquipment
@@ -36,7 +36,7 @@ enum DrawerDestination: Identifiable, Equatable {
     case materialList
     case vehicleList
     case toolList
-    case materialVariants(Resource)
+    case materialVariants(PersistentIdentifier)
 
     // Settings / Business
     case inviteMember
@@ -46,16 +46,16 @@ enum DrawerDestination: Identifiable, Equatable {
     var id: String {
         switch self {
         case .addClient:                        "addClient"
-        case .clientDetail(let c):              "clientDetail-\(c.id)"
-        case .memberDetail(let m):              "memberDetail-\(m.id)"
+        case .clientDetail(let id):             "clientDetail-\(id.hashValue)"
+        case .memberDetail(let id):             "memberDetail-\(id.hashValue)"
         case .addAppointment:                   "addAppointment"
         case .addProject:                       "addProject"
-        case .projectDetail(let p):             "projectDetail-\(p.id)"
-        case .addScopeItem(let p):              "addScopeItem-\(p.id)"
-        case .addMeasurement(let p):            "addMeasurement-\(p.id)"
-        case .addProjectPhoto(let p):           "addProjectPhoto-\(p.id)"
-        case .projectEstimate(let p):           "projectEstimate-\(p.id)"
-        case .addSchedule(let p, let m):        "addSchedule-\(p.id)-\(m.rawValue)"
+        case .projectDetail(let id):            "projectDetail-\(id.hashValue)"
+        case .addScopeItem(let id):             "addScopeItem-\(id.hashValue)"
+        case .addMeasurement(let id):           "addMeasurement-\(id.hashValue)"
+        case .addProjectPhoto(let id):          "addProjectPhoto-\(id.hashValue)"
+        case .projectEstimate(let id):          "projectEstimate-\(id.hashValue)"
+        case .addSchedule(let id, let m):       "addSchedule-\(id.hashValue)-\(m.rawValue)"
         case .addEquipment:                     "addEquipment"
         case .addMaterial:                      "addMaterial"
         case .addVehicle:                       "addVehicle"
@@ -64,7 +64,7 @@ enum DrawerDestination: Identifiable, Equatable {
         case .materialList:                     "materialList"
         case .vehicleList:                      "vehicleList"
         case .toolList:                         "toolList"
-        case .materialVariants(let r):          "materialVariants-\(r.id)"
+        case .materialVariants(let id):         "materialVariants-\(id.hashValue)"
         case .inviteMember:                     "inviteMember"
         }
     }

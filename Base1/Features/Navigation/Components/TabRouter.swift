@@ -8,7 +8,7 @@
 import SwiftUI
 import Observation
 
-@Observable
+@MainActor @Observable
 final class TabRouter {
     var selectedTab: Int = 0
     var isSettingsActive: Bool = false

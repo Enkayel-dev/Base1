@@ -221,8 +221,6 @@ struct ProjectEstimatePDFView: View {
     }
     
     private func formatCurrency(_ value: Decimal) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: value as NSDecimalNumber) ?? "$0.00"
+        value.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
     }
 }

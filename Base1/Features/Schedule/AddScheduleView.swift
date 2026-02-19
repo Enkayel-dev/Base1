@@ -70,20 +70,21 @@ struct AddScheduleView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
 
                     // MARK: - Member Assignment
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Assign Team Member")
                             .font(.headline)
                         
-                        ScrollView(.horizontal, showsIndicators: false) {
+                        ScrollView(.horizontal) {
                             HStack(spacing: 12) {
                                 ForEach(allMembers) { member in
                                     memberPickerItem(member: member)
                                 }
                             }
                         }
+                        .scrollIndicators(.never)
                     }
 
                     // MARK: - Date & Time
@@ -108,7 +109,7 @@ struct AddScheduleView: View {
                             }
                         }
                         .background(.thinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                     }
 
                     // MARK: - Notes
@@ -120,7 +121,7 @@ struct AddScheduleView: View {
                             .frame(height: 100)
                             .padding(8)
                             .background(.thinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
                     }
                 }
                 .padding()

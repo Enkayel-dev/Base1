@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ClientRowView: View {
     let client: Client
@@ -25,47 +26,51 @@ struct ClientRowView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Top row: name + status pill
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(client.firstName) \(client.lastName)")
-                        .font(.headline)
+        Button {
+            drawerRouter.present(.clientDetail(client.persistentModelID))
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                // Top row: name + status pill
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(client.firstName) \(client.lastName)")
+                            .font(.headline)
 
-                    if let company = client.companyName, !company.isEmpty {
-                        Text(company)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if let company = client.companyName, !company.isEmpty {
+                            Text(company)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+
+                    Spacer()
+
+                    Text(client.status.displayTitle)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(statusColor.gradient)
+                        .clipShape(Capsule())
                 }
 
-                Spacer()
-
-                Text(client.status.displayTitle)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(statusColor.gradient)
-                    .clipShape(Capsule())
+                // Data completeness icons — always visible
+                HStack(spacing: 12) {
+                    fieldIcon("envelope", filled: client.email != nil && !client.email!.isEmpty)
+                    fieldIcon("phone", filled: client.phone != nil && !client.phone!.isEmpty)
+                    fieldIcon("mappin.and.ellipse", filled: client.address != nil && !client.address!.isEmpty)
+                    fieldIcon("folder", filled: hasOpenProject)
+                    fieldIcon("calendar", filled: !client.appointments.isEmpty)
+                    fieldIcon("doc.text", filled: hasApprovedEstimate)
+                    fieldIcon("banknote", filled: hasPaidInvoice)
+                }
             }
-
-            // Data completeness icons — always visible
-            HStack(spacing: 12) {
-                fieldIcon("envelope", filled: client.email != nil && !client.email!.isEmpty)
-                fieldIcon("phone", filled: client.phone != nil && !client.phone!.isEmpty)
-                fieldIcon("mappin.and.ellipse", filled: client.address != nil && !client.address!.isEmpty)
-                fieldIcon("folder", filled: hasOpenProject)
-                fieldIcon("calendar", filled: !client.appointments.isEmpty)
-                fieldIcon("doc.text", filled: hasApprovedEstimate)
-                fieldIcon("banknote", filled: hasPaidInvoice)
-            }
+            .padding()
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         }
-        .padding()
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onTapGesture { drawerRouter.present(.clientDetail(client)) }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Helpers

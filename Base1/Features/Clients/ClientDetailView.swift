@@ -12,6 +12,14 @@ struct ClientDetailView: View {
     let client: Client
     
     @Environment(\.dismissDrawer) private var dismiss
+
+    private var sortedProjects: [Project] {
+        client.projects.sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var sortedAppointments: [Appointment] {
+        client.appointments.sorted { $0.startDate > $1.startDate }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -80,7 +88,7 @@ struct ClientDetailView: View {
         }
         .padding()
         .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
     }
     
     // MARK: - Contact Section
@@ -120,7 +128,7 @@ struct ClientDetailView: View {
                 }
             }
             .background(.thinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         }
     }
     
@@ -162,7 +170,7 @@ struct ClientDetailView: View {
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(.thinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
         }
     }
     
@@ -180,9 +188,9 @@ struct ClientDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
-                ForEach(client.projects.sorted(by: { $0.createdAt > $1.createdAt })) { project in
+                ForEach(sortedProjects) { project in
                     ProjectRowView(project: project)
                 }
             }
@@ -203,9 +211,9 @@ struct ClientDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(.thinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
             } else {
-                ForEach(client.appointments.sorted(by: { $0.startDate > $1.startDate })) { appointment in
+                ForEach(sortedAppointments) { appointment in
                     AppointmentRowView(appointment: appointment)
                 }
             }

@@ -25,6 +25,11 @@ enum DesignConstants {
         static let spacing: CGFloat = 4  // Reduced from 8
     }
     
+    // MARK: - Card
+    enum Card {
+        static let cornerRadius: CGFloat = 12
+    }
+
     // MARK: - Workflow Card
     enum WorkflowCard {
         static let iconSize: CGFloat = 48
