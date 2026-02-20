@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import PDFKit
 
 struct PDFPreviewView: View {
@@ -13,6 +14,7 @@ struct PDFPreviewView: View {
     let business: Business?
     
     @Environment(\.dismissDrawer) private var dismiss
+    @Environment(DrawerRouter.self) private var drawerRouter
     @State private var pdfURL: URL?
     @State private var isLoading = true
     
@@ -30,17 +32,30 @@ struct PDFPreviewView: View {
                 if let url = pdfURL {
                     VStack(spacing: 12) {
                         PDFKitView(url: url)
-                        ShareLink(
-                            item: url,
-                            preview: SharePreview(
-                                "\(project.title) Estimate",
-                                image: Image(systemName: "doc.fill")
-                            )
-                        ) {
-                            Label("Share PDF", systemImage: "square.and.arrow.up")
-                                .frame(maxWidth: .infinity)
+                        
+                        HStack(spacing: 12) {
+                            // Share PDF file
+                            ShareLink(
+                                item: url,
+                                preview: SharePreview(
+                                    "\(project.title) Estimate",
+                                    image: Image(systemName: "doc.fill")
+                                )
+                            ) {
+                                Label("Share PDF", systemImage: "square.and.arrow.up")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.glass)
+                            
+                            // Share magic link for client portal
+                            Button {
+                                drawerRouter.present(.shareEstimate(project.persistentModelID))
+                            } label: {
+                                Label("Share Link", systemImage: "link")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.glass)
                         }
-                        .buttonStyle(.glass)
                         .padding(.horizontal)
                         .padding(.bottom, 8)
                     }

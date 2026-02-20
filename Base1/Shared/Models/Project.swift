@@ -26,6 +26,17 @@ public final class Project {
     public var createdAt: Date
     public var updatedAt: Date
     public var isLocked: Bool = false
+    
+    // MARK: - Estimate Sharing Fields
+    
+    /// Secure token for sharing the estimate via magic link
+    public var estimateShareToken: String?
+    /// When the estimate was shared
+    public var estimateSharedAt: Date?
+    /// When the client approved the estimate
+    public var estimateApprovedAt: Date?
+    /// Name of the person who approved the estimate
+    public var estimateApprovedByName: String?
 
     // MARK: - Relationships
 

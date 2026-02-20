@@ -41,6 +41,11 @@ struct AddScopeItemView: View {
 
     @Query(sort: \Member.displayName)
     private var allMembers: [Member]
+    
+    @Query(sort: \ScopeItemTemplate.name)
+    private var allTemplates: [ScopeItemTemplate]
+    
+    @State private var selectedTemplate: ScopeItemTemplate?
 
     private var businessResources: [Resource] {
         guard let key = businessManager.businessKey else { return [] }
@@ -57,6 +62,21 @@ struct AddScopeItemView: View {
         guard let role = selectedRole else { return [] }
         return businessMembers.filter { $0.role == role }
     }
+    
+    /// Templates filtered by business and optionally by project's job type
+    private var filteredTemplates: [ScopeItemTemplate] {
+        guard let key = businessManager.businessKey else { return [] }
+        var templates = allTemplates.filter { $0.businessKey == key }
+        
+        // Optionally filter by project's job type
+        if let jobType = project.jobType {
+            templates = templates.filter { 
+                $0.jobType == nil || $0.jobType?.persistentModelID == jobType.persistentModelID 
+            }
+        }
+        
+        return templates
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -70,6 +90,7 @@ struct AddScopeItemView: View {
             VStack(spacing: 20) {
                 ScrollView {
                     VStack(spacing: 24) {
+                        templateSection
                         descriptionSection
                         resourcesSection
                         laborSection
@@ -86,6 +107,71 @@ struct AddScopeItemView: View {
 
     private var canSave: Bool {
         !itemDescription.isEmpty || !resourceEntries.isEmpty || !laborHours.isEmpty
+    }
+    
+    // MARK: - Template Section
+    
+    @ViewBuilder
+    private var templateSection: some View {
+        if !filteredTemplates.isEmpty {
+            sectionCard {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Quick Add from Template", systemImage: "doc.on.doc")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Picker("Template", selection: $selectedTemplate) {
+                        Text("Manual Entry").tag(ScopeItemTemplate?.none)
+                        ForEach(filteredTemplates) { template in
+                            Text(template.name).tag(ScopeItemTemplate?.some(template))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .onChange(of: selectedTemplate) { _, template in
+                        applyTemplate(template)
+                    }
+                    
+                    Text("Select a template to pre-fill the form")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+    
+    private func applyTemplate(_ template: ScopeItemTemplate?) {
+        guard let t = template else { return }
+        
+        // Pre-fill description
+        itemDescription = t.name
+        
+        // Pre-fill labor hours
+        if let hours = t.defaultLaborHours {
+            laborHours = "\(hours)"
+        }
+        
+        // Pre-fill notes
+        if let templateNotes = t.notes {
+            notes = templateNotes
+        }
+        
+        // Pre-select resource if template has one
+        if let resource = t.resource {
+            // If it's a variant, select parent first, then variant
+            if let parentMaterial = resource.parentMaterial {
+                selectedParentResource = parentMaterial
+                selectedVariantResource = resource
+            } else {
+                selectedParentResource = resource
+                selectedVariantResource = nil
+            }
+            
+            // Set default quantity and unit
+            pendingQuantity = "\(t.defaultQuantity)"
+            if let unit = t.defaultUnit {
+                pendingUnit = unit
+            }
+        }
     }
 
     // MARK: - Description Section

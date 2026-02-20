@@ -180,15 +180,61 @@ struct ProjectEstimatePDFView: View {
             }
             .padding(.top, 20)
             
-            // Footer / Signature Area
-            VStack(alignment: .leading, spacing: 20) {
-                Text("NOTES")
-                    .font(.system(size: 10, weight: .bold))
+            // Footer / Notes & Signature Area
+            VStack(alignment: .leading, spacing: 12) {
                 
+                // Scope Item Notes (individual item conditions)
+                let itemsWithNotes = project.scopeItems.filter { $0.notes != nil && !$0.notes!.isEmpty }
+                if !itemsWithNotes.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("ITEM NOTES")
+                            .font(.system(size: 10, weight: .bold))
+                        
+                        ForEach(itemsWithNotes) { item in
+                            HStack(alignment: .top, spacing: 4) {
+                                Text("•")
+                                    .font(.system(size: 9))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.displayName)
+                                        .font(.system(size: 9, weight: .semibold))
+                                    Text(item.notes!)
+                                        .font(.system(size: 9))
+                                }
+                            }
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                
+                // Project Notes (project-specific terms)
+                if let projectNotes = project.notes, !projectNotes.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PROJECT NOTES")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(projectNotes)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // Business Contract Terms
+                if let terms = business?.contractTerms, !terms.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("TERMS & CONDITIONS")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(terms)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // Validity Note
                 Text("This estimate is valid for 30 days. Final pricing may vary based on site conditions or changes in scope.")
                     .font(.system(size: 9))
                     .foregroundStyle(.secondary)
+                    .padding(.top, 4)
                 
+                // Signature Area
                 HStack(spacing: 40) {
                     VStack(alignment: .leading) {
                         Divider().frame(width: 200)
@@ -200,7 +246,7 @@ struct ProjectEstimatePDFView: View {
                         Text("Date").font(.system(size: 8))
                     }
                 }
-                .padding(.top, 40)
+                .padding(.top, 20)
             }
         }
         .padding(40) // Standard margins

@@ -24,6 +24,14 @@ public final class Member {
     public var createdAt: Date
     public var updatedAt: Date
 
+    // MARK: - CloudKit Sharing
+    
+    /// Apple User ID from Sign in with Apple (linked when member accepts invite)
+    public var appleUserID: String?
+    
+    /// CloudKit share participant lookup info
+    public var cloudKitShareParticipantID: String?
+
     // MARK: - Payroll Info
 
     public var bankName: String?

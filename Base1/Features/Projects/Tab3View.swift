@@ -23,21 +23,41 @@ struct Tab3View: View {
         guard let key = businessManager.businessKey else { return [] }
         return allProjects.filter { $0.businessKey == key }
     }
+    
+    /// Projects visible to the current user based on their role.
+    /// Owners and admins see all projects; members see only assigned projects.
+    private var visibleProjects: [Project] {
+        var projects = businessProjects
+        
+        // Non-admin members only see projects they're assigned to
+        if !businessManager.isOwnerOrAdmin, let member = businessManager.currentMember {
+            projects = projects.filter { project in
+                project.teamMembers.contains { $0.persistentModelID == member.persistentModelID }
+            }
+        }
+        
+        return projects
+    }
 
     private var filteredProjects: [Project] {
         switch selectedFilter {
         case .all:
-            return businessProjects.filter { $0.status != .template }
+            return visibleProjects.filter { $0.status != .template }
         case .planning:
-            return businessProjects.filter { $0.status == .planning }
+            return visibleProjects.filter { $0.status == .planning }
         case .inProgress:
-            return businessProjects.filter { $0.status == .inProgress }
+            return visibleProjects.filter { $0.status == .inProgress }
         case .onHold:
-            return businessProjects.filter { $0.status == .onHold }
+            return visibleProjects.filter { $0.status == .onHold }
         case .completed:
-            return businessProjects.filter { $0.status == .completed }
+            return visibleProjects.filter { $0.status == .completed }
         case .templates:
-            return businessProjects.filter { $0.status == .template && $0.jobType?.parent == nil }
+            // Templates are only visible to owners/admins
+            if businessManager.isOwnerOrAdmin {
+                return businessProjects.filter { $0.status == .template && $0.jobType?.parent == nil }
+            } else {
+                return []
+            }
         }
     }
 

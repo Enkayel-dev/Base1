@@ -73,6 +73,48 @@ struct BusinessProfile: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        
+                        // MARK: - Contract Terms
+                        sectionCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("Default Contract Terms", systemImage: "doc.text")
+                                    .font(.headline)
+                                
+                                TextEditor(text: Binding(
+                                    get: { business.contractTerms ?? "" },
+                                    set: { business.contractTerms = $0.isEmpty ? nil : $0 }
+                                ))
+                                .frame(minHeight: 120)
+                                .scrollContentBackground(.hidden)
+                                .background(.white.opacity(0.05))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                
+                                Text("These terms appear on all project estimates. Include payment terms, warranties, conditions, etc.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        
+                        // MARK: - Scope Item Library
+                        sectionCard {
+                            Button {
+                                drawerRouter.present(.scopeItemLibrary)
+                            } label: {
+                                HStack {
+                                    Label("Scope Item Library", systemImage: "list.clipboard")
+                                        .font(.headline)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Text("Manage reusable scope item templates for faster project setup")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
 
                         // MARK: - Team
                         teamSection(business: business)

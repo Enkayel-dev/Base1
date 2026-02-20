@@ -87,6 +87,18 @@ struct DrawerViewFactory: View {
         // Settings / Business
         case .inviteMember:
             InviteMemberView()
+        case .scopeItemLibrary:
+            ScopeItemLibraryView()
+        case .addScopeItemTemplate:
+            AddScopeItemTemplateView(template: nil)
+        case .editScopeItemTemplate(let id):
+            if let template = modelContext.registeredModel(for: id) as ScopeItemTemplate? {
+                AddScopeItemTemplateView(template: template)
+            }
+        case .shareEstimate(let id):
+            if let project = modelContext.registeredModel(for: id) as Project? {
+                ShareEstimateView(project: project)
+            }
         }
     }
 }

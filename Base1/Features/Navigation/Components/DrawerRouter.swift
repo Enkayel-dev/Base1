@@ -40,6 +40,12 @@ enum DrawerDestination: Identifiable, Equatable {
 
     // Settings / Business
     case inviteMember
+    case scopeItemLibrary
+    case addScopeItemTemplate
+    case editScopeItemTemplate(PersistentIdentifier)
+    
+    // Sharing
+    case shareEstimate(PersistentIdentifier)
 
     // MARK: Identifiable
 
@@ -66,6 +72,10 @@ enum DrawerDestination: Identifiable, Equatable {
         case .toolList:                         "toolList"
         case .materialVariants(let id):         "materialVariants-\(id.hashValue)"
         case .inviteMember:                     "inviteMember"
+        case .scopeItemLibrary:                 "scopeItemLibrary"
+        case .addScopeItemTemplate:             "addScopeItemTemplate"
+        case .editScopeItemTemplate(let id):    "editScopeItemTemplate-\(id.hashValue)"
+        case .shareEstimate(let id):            "shareEstimate-\(id.hashValue)"
         }
     }
 

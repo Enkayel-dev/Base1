@@ -31,6 +31,16 @@ struct ScopeItemRowView: View {
             && !project.isLocked
             && project.status != .template
     }
+    
+    /// Whether to show the "Mark Complete" action for assigned staff.
+    private var showMarkCompleteAction: Bool {
+        guard let currentMember = businessManager.currentMember,
+              let assignedMember = scopeItem.assignedMember else { return false }
+        
+        // Show if: current member is assigned to this item AND item is not yet fulfilled
+        return currentMember.persistentModelID == assignedMember.persistentModelID
+            && scopeItem.status != .fulfilled
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -145,10 +155,34 @@ struct ScopeItemRowView: View {
                 }
                 .pickerStyle(.menu)
             }
+            
+            // Mark Complete action for assigned staff
+            if showMarkCompleteAction {
+                Divider()
+                    .padding(.vertical, 4)
+                
+                Button {
+                    markAsComplete()
+                } label: {
+                    Label("Mark Complete", systemImage: "checkmark.circle.fill")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.green)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: DesignConstants.Card.cornerRadius))
+    }
+    
+    // MARK: - Actions
+    
+    private func markAsComplete() {
+        scopeItem.statusRaw = ScopeItemStatus.fulfilled.rawValue
+        scopeItem.updatedAt = .now
     }
 
     // MARK: - Helpers

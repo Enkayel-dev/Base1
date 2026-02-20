@@ -26,6 +26,10 @@ public final class Business {
 
     /// Business-wide cost markup as a percentage (e.g. 15 for 15%).
     public var costMarkupPercentage: Decimal?
+    
+    /// Default contract terms that appear on all estimates.
+    /// These can include payment terms, warranties, conditions, etc.
+    public var contractTerms: String?
 
     public var createdAt: Date
 

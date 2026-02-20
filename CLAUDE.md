@@ -115,15 +115,17 @@ Files are grouped by **feature** (Clients, Workflow, Settings, etc.) rather than
 
 ```
 Features/
+├── Auth/             ← AuthView (Sign in with Apple), SubscriptionView (StoreKit 2 subscription management)
 ├── Clients/          ← Tab1View, AddClientView, ClientRowView, ClientDetailView, EmptyClientsView
 ├── Schedule/         ← Tab2View, AddAppointmentView, AddScheduleView, AppointmentRowView, DayTimelineView, EmptyScheduleView
-├── Projects/         ← Tab3View, AddProjectView, AddMeasurementView, AddProjectPhotoView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView, PDFPreviewView, ProjectEstimatePDFView
+├── Projects/         ← Tab3View, AddProjectView, AddMeasurementView, AddProjectPhotoView, ProjectRowView, ProjectDetailView, AddScopeItemView, ScopeItemRowView, EmptyProjectsView, PDFPreviewView, ProjectEstimatePDFView, ShareEstimateView
 ├── Resources/        ← Tab4View, AddEquipmentView, AddMaterialView, AddVehicleView, AddToolView, ResourceRowView, EmptyResourcesView
 ├── Finances/         ← Tab5View (placeholder)
 ├── Workflow/         ← WorkflowModels, WorkflowService, WorkflowMiniCard, WorkflowViewFactory (stub)
 ├── Background/       ← AnimatedMeshBackground, MeshScheme, BackgroundState, BackgroundService, BackgroundCoordinator (unused)
 ├── Navigation/       ← MainTabView, TabRouter, DrawerRouter, DrawerViewFactory, BottomBarView, CustomBottomTabBar, SearchBar, SearchState, BusinessLogo, SettingsButton
 └── Settings/         ← SettingsView, BusinessProfile, MemberRowView, MemberDetailView, InviteMemberView
+    └── ScopeItemLibrary/ ← ScopeItemLibraryView, ScopeItemTemplateRowView, AddScopeItemTemplateView
 ```
 
 #### Pattern: Environment Injection from App Root
@@ -136,17 +138,22 @@ All shared services are created once at the app entry point and injected via `.e
 struct Base1App: App {
     var body: some Scene {
         WindowGroup {
-            MainTabView(backgroundService: BackgroundService())
+            RootView(backgroundService: backgroundService)
                 .environment(businessManager)
                 .environment(tabRouter)
                 .environment(drawerRouter)
                 .environment(searchState)
                 .environment(workflowService)
                 .environment(backgroundState)
+                .environment(portalService)
+                .environment(authService)
+                .environment(subscriptionManager)
+                .environment(cloudKitSharingService)
         }
         .modelContainer(for: Base1SchemaV1.models)
     }
 }
+// RootView gates MainTabView behind AuthView based on authService.authState
 ```
 
 #### Pattern: Offset-Based Tab Navigation
@@ -275,9 +282,9 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 
 | File | Type | Purpose |
 |------|------|---------|
-| `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates/members/jobTypes/scopeItemTemplates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, taxNumber?, logoData?, createdAt |
-| `Client.swift` | `Client`, `ClientStatus` | Customer with status (lead/active/closed). Has businessKey |
-| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, measurements, photos, computed totalScopeCost, totalLaborHours, hasInventoryIssues. **Has `isLocked` flag to prevent edits after estimate generation.** |
+| `Business.swift` | `Business` | Root entity, owns clients/projects/resources/templates/members/jobTypes/scopeItemTemplates. Fields: businessKey, ownerAppleUserID, name, ownerName, email?, phone?, address?, taxNumber?, logoData?, **contractTerms?**, createdAt |
+| `Client.swift` | `Client`, `ClientStatus` | Customer with status (lead/active/closed). Has businessKey. **Portal fields:** portalToken?, portalTokenCreatedAt?, portalEnabled |
+| `Project.swift` | `Project`, `ProjectStatus` | Project tracking with budget/timeline. Has businessKey, projectTypeRaw (job type name), scopeItems relationship, assignedMembers many-to-many, measurements, photos, computed totalScopeCost, totalLaborHours, hasInventoryIssues. **Has `isLocked` flag to prevent edits after estimate generation.** **Estimate sharing:** estimateShareToken?, estimateSharedAt?, estimateApprovedAt?, estimateApprovedByName? |
 | `Invoice.swift` | `Invoice`, `InvoiceStatus` | Billing (draft/sent/paid/overdue/cancelled). Has businessKey |
 | `Appointment.swift` | `Appointment`, `AppointmentType` | Scheduling (consultation/siteVisit/meeting/followUp/delivery). Has businessKey |
 | `Resource.swift` | `Resource`, `ResourceCategory` | Equipment/materials/vehicles/tools with category-specific fields. Equipment: equipmentMaterials relationship. Material: materialTypeName, variantLabel, parentMaterial/materialVariants self-referential parent-child. Vehicle: vehicleMake, vehicleModel, startingKilometers, serviceNotes. Tool: assignedVehicle relationship, isShopTool. Common: businessKey, scopeItems relationship, computed allocatedQuantity, availableQuantity, isMaterialType, isMaterialVariant, toolLocationLabel, vehicleDisplayLabel |
@@ -286,7 +293,7 @@ All models use `@Model` (SwiftData). Schema defined in `Schema/Base1SchemaV1.swi
 | `UnitOfMeasure.swift` | `UnitOfMeasure` | Enum of all units (area, length, volume, count, weight, time, etc.) with `abbreviation`, `category`, and `convert(_:to:)` for unit conversion |
 | `ProjectMeasurement.swift` | `ProjectMeasurement` | Room/area measurements linked to a project. Fields: businessKey, name, value (`Decimal`), unit (`UnitOfMeasure`), notes?. Relationship: project |
 | `ProjectPhoto.swift` | `ProjectPhoto` | Photo attached to a project. Fields: businessKey, imageData (`Data`?), caption?. Relationship: project |
-| `Member.swift` | `Member`, `MemberRole`, `InviteStatus` | Team members with roles (owner/admin/member). Fields: businessKey, email, displayName, roleRaw, inviteStatusRaw, invitedAt, acceptedAt?, createdAt, updatedAt. Relationships: business, assignedProjects (many-to-many with Project). Computed: role, inviteStatus, initials |
+| `Member.swift` | `Member`, `MemberRole`, `InviteStatus` | Team members with roles (owner/admin/member). Fields: businessKey, email, displayName, roleRaw, inviteStatusRaw, **appleUserID?** (linked via Sign in with Apple), **cloudKitShareParticipantID?** (CloudKit share participant), invitedAt, acceptedAt?, createdAt, updatedAt. Relationships: business, assignedProjects (many-to-many with Project). Computed: role, inviteStatus, initials |
 | `JobType.swift` | `JobType` | Business-created project types (e.g., Renovation, New Build). Fields: businessKey, name, icon, sortOrder, createdAt. Relationships: business, scopeItemTemplates, children/parent (self-referential hierarchy), templateProject |
 | `ScopeItemTemplate.swift` | `ScopeItemTemplate` | Reusable scope item library entries linked to Resources. Fields: businessKey, name, defaultQuantity, defaultLaborHours?, defaultCostMarkup?, notes?, createdAt. Relationships: resource, business, jobType |
 | `WorkflowTemplate.swift` | `WorkflowTemplate`, `WorkflowStepTemplate`, `WorkflowCategory` | Reusable workflow blueprints. Has businessKey |
@@ -317,10 +324,14 @@ JobType  0──1 Project (templateProject)
 ### Services (`Shared/Services/`)
 | File | Type | Purpose |
 |------|------|---------|
-| `BusinessManager.swift` | `BusinessManager` (`@MainActor @Observable`) | Business entity CRUD, multi-tenancy, bootstrapping |
+| `AuthService.swift` | `AuthService` (`@MainActor @Observable`), `AuthState`, `AppleUserCredentials`, `AuthError` | Sign in with Apple authentication. Keychain storage for credentials. States: `.unknown`, `.signedOut`, `.signedIn(userID:)`. Methods: `checkExistingSession()`, `handleAuthorization(_:)`, `handleAuthorizationError(_:)`, `signOut()`. |
+| `SubscriptionManager.swift` | `SubscriptionManager` (`@MainActor @Observable`), `SubscriptionTier`, `SubscriptionStatus`, `SubscriptionError` | StoreKit 2 subscription management. Tiers: none/basic/professional/enterprise with team member limits (0/3/10/unlimited). Methods: `loadProducts()`, `purchase(_:)`, `restorePurchases()`, `canAddTeamMember(currentCount:)`. |
+| `CloudKitSharingService.swift` | `CloudKitSharingService` (`@MainActor @Observable`), `PendingShareInvite`, `ParticipantStatus`, `CloudKitSharingError` | CloudKit-based team sharing. Methods: `createBusinessShare(for:invitingMember:)`, `addParticipant(email:to:permission:)`, `acceptShareInvitation(metadata:modelContext:authService:)`, `removeParticipant(member:from:)`. |
+| `BusinessManager.swift` | `BusinessManager` (`@MainActor @Observable`) | Business entity CRUD, multi-tenancy, bootstrapping. **Auth integration:** `configureForAuthenticatedUser(appleUserID:credentials:)`, `isBusinessOwner`, `signOut()`. **Role-based access:** `currentMember`, `currentUserRole`, `isOwnerOrAdmin`, `effectiveCurrentMember`. **Debug mode:** `debugModeEnabled`, `debugSelectedMember` for testing role-based views. |
 | `ProjectService.swift` | `ProjectService` (`@MainActor` class) | Project template duplication — `duplicateTemplate(from:to:)` copies scope items, measurements, photos. `syncScopeFromParentToVariants(_:)` propagates parent template scope to child job type variants |
 | `ClientService.swift` | Free functions | `filteredClients(_:filter:)` — filters `[Client]` by `FilterOption`. No class, no state. |
 | `AppointmentService.swift` | Free functions + `ScheduleFilter` | `filteredAppointments(_:filter:)` and `appointmentsGroupedByDay(_:)`. `ScheduleFilter` enum (all/upcoming/past/cancelled) defined here. |
+| `PortalService.swift` | `PortalService` (`@MainActor @Observable`) | Client portal magic link generation. Estimate sharing: `generateEstimateLink(for:)`, `getEstimateLink(for:)`, `revokeEstimateLink(for:)`. Client portal: `generateClientPortalLink(for:)`, `getPortalLink(for:)`, `revokePortalAccess(for:)`. Uses `SecRandomCopyBytes` for secure token generation. |
 
 ### UI Layer
 
@@ -346,6 +357,12 @@ JobType  0──1 Project (templateProject)
 | `WorkflowMiniCard.swift` | `WorkflowMiniCard`, `WorkflowProgressBar` | Compact workflow display in bottom bar |
 | `WorkflowViewFactory.swift` | `WorkflowViewFactory` | Maps step viewKey strings to SwiftUI views (stub) |
 
+#### Auth System (`Features/Auth/`)
+| File | Type | Purpose |
+|------|------|---------|
+| `AuthView.swift` | `AuthView` | Sign in with Apple UI — app branding, feature preview rows, `SignInWithAppleButton`, error display, loading overlay. Gates app access via `RootView`. |
+| `SubscriptionView.swift` | `SubscriptionView`, `TierCard` | Subscription management — current status, billing toggle (monthly/yearly), tier cards with features, purchase button, restore purchases. Presented as sheet from SettingsView. |
+
 #### Feature Views
 | File | Type | Feature | Purpose |
 |------|------|---------|---------|
@@ -360,17 +377,18 @@ JobType  0──1 Project (templateProject)
 | `Features/Schedule/AddScheduleView.swift` | `AddScheduleView` | Schedule | Schedule a milestone event — horizontal member picker scroll, date/time, duration |
 | `Features/Schedule/AppointmentRowView.swift` | `AppointmentRowView` | Schedule | Appointment list row — type icon, time, client, location, status indicators |
 | `Features/Schedule/EmptyScheduleView.swift` | `EmptyScheduleView` | Schedule | Empty state |
-| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project side drawer |
+| `Features/Projects/Tab3View.swift` | `Tab3View` | Projects | Project list with status filter picker (LiquidGlassFilterPicker) + add project side drawer. **Role-based filtering:** non-admin members see only assigned projects via `visibleProjects` computed property. |
 | `Features/Projects/AddProjectView.swift` | `AddProjectView` | Projects | Add project form — client first, job type picker, auto-title, budget, start/due dates, team member assignment, description. Status auto-set to planning, scope items pre-filled from template. Uses `sortedParentJobTypeChildren` computed property. |
 | `Features/Projects/ProjectRowView.swift` | `ProjectRowView` | Projects | Project list row — tappable via `Button` → `.projectDetail` drawer. Status badge, job type label, client name, date range, overdue indicator, estimate button. |
 | `Features/Projects/EmptyProjectsView.swift` | `EmptyProjectsView` | Projects | Empty state |
-| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, schedule section, scope items list, measurements, photos, summary cards (cost, labor, inventory warnings). Uses `sortedScopeItems`, `sortedMeasurements`, `sortedPhotos` computed properties. |
-| `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker with multi-resource support (`ScopeItemResource` join), quantity per resource, unit of measure, measurement chip selector (horizontal scroll), labor hours, live cost estimate |
+| `Features/Projects/ProjectDetailView.swift` | `ProjectDetailView` | Projects | Project detail side drawer — header, schedule section, scope items list, measurements, photos, summary cards (cost, labor, inventory warnings). Uses `sortedScopeItems`, `sortedMeasurements`, `sortedPhotos` computed properties. **Inline forms:** uses `ExpandableCard` for adding measurements and photos instead of nested drawers. **Project notes editor** for contract terms. **Staff permissions:** `canAddPhotos` allows assigned staff to add progress photos on in-progress projects. |
+| `Features/Projects/AddScopeItemView.swift` | `AddScopeItemView` | Projects | Add scope item form — resource picker with multi-resource support (`ScopeItemResource` join), quantity per resource, unit of measure, measurement chip selector (horizontal scroll), labor hours, live cost estimate. **Template picker:** select from `ScopeItemTemplate` to pre-fill form via `applyTemplate(_:)`. |
 | `Features/Projects/AddMeasurementView.swift` | `AddMeasurementView` | Projects | Add measurement form — name, value, unit picker |
 | `Features/Projects/AddProjectPhotoView.swift` | `AddProjectPhotoView` | Projects | Add photo form — PhotosPicker integration, caption |
-| `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" × 11" = 612×792pt) estimate view for PDF generation. Uses static font sizes and `Color` values (not adaptive). |
-| `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | PDF generation and preview drawer — `ImageRenderer` snapshot on `@MainActor`, `CGContext` PDF file written via `Task.detached`, displayed via `PDFKit.PDFView`. Share via `ShareLink`. |
-| `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icons, quantity, cost, status badge, inventory shortfall warning |
+| `Features/Projects/ProjectEstimatePDFView.swift` | `ProjectEstimatePDFView` | Projects | Letter-formatted (8.5" × 11" = 612×792pt) estimate view for PDF generation. Uses static font sizes and `Color` values (not adaptive). **Footer sections:** Item Notes (scope item notes), Project Notes (project.notes), Terms & Conditions (business.contractTerms). |
+| `Features/Projects/PDFPreviewView.swift` | `PDFPreviewView` | Projects | PDF generation and preview drawer — `ImageRenderer` snapshot on `@MainActor`, `CGContext` PDF file written via `Task.detached`, displayed via `PDFKit.PDFView`. Share PDF via `ShareLink`. **Share Link button** opens `ShareEstimateView` for magic link sharing. |
+| `Features/Projects/ShareEstimateView.swift` | `ShareEstimateView` | Projects | Magic link sharing UI — generates/displays estimate share link via `PortalService`, copy to clipboard, share sheet, revoke link. |
+| `Features/Projects/ScopeItemRowView.swift` | `ScopeItemRowView` | Projects | Scope item row — resource icons, quantity, cost, status badge, inventory shortfall warning. **Staff action:** "Mark Complete" button for assigned member via `showMarkCompleteAction` computed property. |
 | `Features/Resources/Tab4View.swift` | `Tab4View`, `ResourceListSheet` | Resources | 2x2 category grid (Equipment/Materials/Vehicles/Tools) — each card has Add and Open buttons. ResourceListSheet shows filtered list per category |
 | `Features/Resources/AddEquipmentView.swift` | `AddEquipmentView` | Resources | Add equipment form |
 | `Features/Resources/AddMaterialView.swift` | `AddMaterialView` | Resources | Add material form — "New Type" or "Add Variant" modes |
@@ -379,11 +397,14 @@ JobType  0──1 Project (templateProject)
 | `Features/Resources/ResourceRowView.swift` | `ResourceRowView` | Resources | Resource list row — category-specific detail |
 | `Features/Resources/EmptyResourcesView.swift` | `EmptyResourcesView` | Resources | Empty state |
 | `Features/Finances/Tab5View.swift` | `Tab5View` | Finances | Finances tab (placeholder) |
-| `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen (mock) |
-| `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo, team management section, job types & templates link |
+| `Features/Settings/SettingsView.swift` | `SettingsView` | Settings | Settings screen — account section (user info, subscription link, sign out), **debug role switcher** (#if DEBUG) for testing role-based views without multiple iCloud accounts. Uses `debugModeEnabled` and `debugSelectedMember` from BusinessManager. |
+| `Features/Settings/BusinessProfile.swift` | `BusinessProfile` | Settings | Business info editing — inline fields, PhotosPicker logo, team management section, job types & templates link. **Contract terms editor** for business-wide estimate terms. **Scope Item Library navigation** button. |
+| `Features/Settings/ScopeItemLibrary/ScopeItemLibraryView.swift` | `ScopeItemLibraryView` | Settings | Scope item template library — list all templates with JobType filter picker, add/edit/delete templates. Uses `selectedJobType` and `showAllJobTypes` for filtering. |
+| `Features/Settings/ScopeItemLibrary/ScopeItemTemplateRowView.swift` | `ScopeItemTemplateRowView` | Settings | Template list row — resource icon, name, job type, default values. Tap to edit, context menu to delete. |
+| `Features/Settings/ScopeItemLibrary/AddScopeItemTemplateView.swift` | `AddScopeItemTemplateView` | Settings | Add/edit template form — name, job type picker, resource picker, default quantity/unit/labor hours/notes. |
 | `Features/Settings/MemberRowView.swift` | `MemberRowView` | Settings | Team member list row — avatar initials, name, email, role badge, invite status. Tappable via `Button` → `.memberDetail` drawer. |
 | `Features/Settings/MemberDetailView.swift` | `MemberDetailView` | Settings | Member detail drawer — role, invite status, assigned projects with milestone timeline. Uses `sortedMilestoneProjects` and `sortedMilestones(for:)` computed helpers. |
-| `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form side drawer — email, display name, role picker (admin/member) |
+| `Features/Settings/InviteMemberView.swift` | `InviteMemberView` | Settings | Invite member form side drawer — email, display name, role picker (admin/member). **CloudKit sharing integration:** creates share via `CloudKitSharingService`, displays share link, team limit warning based on subscription tier. Includes `ShareSheet` UIViewControllerRepresentable. |
 
 #### Shared Components (`Shared/UI/Components/`)
 | File | Type | Purpose |
@@ -391,6 +412,7 @@ JobType  0──1 Project (templateProject)
 | `LabeledTextField.swift` | `LabeledTextField` | Shared labeled text field with icon + keyboard type |
 | `BindingExtensions.swift` | `Binding<String?>.orEmpty` | Optional string binding helper |
 | `DrawerHeader.swift` | `DrawerHeader` | Reusable header component for drawer views — title, optional subtitle, dismiss button |
+| `ExpandableCard.swift` | `ExpandableCard<Header, Content>` | Generic expandable card with collapsed/expanded states. Spring animation using `DesignConstants.Animation.morphResponse/morphDamping`. `.thinMaterial` background. Replaces nested drawer pattern for inline forms. `onExpand`/`onCollapse` callbacks. |
 | `LiquidGlassFilterPicker.swift` | `LiquidGlassFilterPicker<Filter: Filterable>`, `Filterable` protocol, `FilterOption` (Clients), `ProjectFilterOption` (Projects) | Generic glass morphism segmented control. Uses separate `@Namespace` for `glassEffectID` vs `matchedGeometryEffect` to avoid conflicts. |
 | `SideDrawer.swift` | `SideDrawer<Content>`, `DrawerDismissAction`, `NavigationBackgroundCleaner` | Side drawer rendering component — slides from right, center 1/3 height, ultraThinMaterial, dimmed backdrop. Content views use `@Environment(\.dismissDrawer)` to dismiss. |
 
@@ -448,10 +470,14 @@ Base1/
 │   │   └── Schema/
 │   │       └── Base1SchemaV1.swift
 │   ├── Services/
+│   │   ├── AuthService.swift
+│   │   ├── SubscriptionManager.swift
+│   │   ├── CloudKitSharingService.swift
 │   │   ├── BusinessManager.swift
 │   │   ├── ProjectService.swift
 │   │   ├── ClientService.swift
-│   │   └── AppointmentService.swift
+│   │   ├── AppointmentService.swift
+│   │   └── PortalService.swift
 │   ├── Design/
 │   │   └── DesignConstants.swift
 │   └── UI/
@@ -459,9 +485,13 @@ Base1/
 │           ├── DrawerHeader.swift
 │           ├── LabeledTextField.swift
 │           ├── BindingExtensions.swift
+│           ├── ExpandableCard.swift
 │           ├── LiquidGlassFilterPicker.swift
 │           └── SideDrawer.swift
 └── Features/
+    ├── Auth/
+    │   ├── AuthView.swift
+    │   └── SubscriptionView.swift
     ├── Navigation/
     │   ├── MainTabView.swift
     │   └── Components/
@@ -510,7 +540,8 @@ Base1/
     │   ├── ProjectDetailView.swift
     │   ├── ProjectEstimatePDFView.swift
     │   ├── ProjectRowView.swift
-    │   └── ScopeItemRowView.swift
+    │   ├── ScopeItemRowView.swift
+    │   └── ShareEstimateView.swift
     ├── Resources/
     │   ├── Tab4View.swift
     │   ├── AddEquipmentView.swift
@@ -526,5 +557,9 @@ Base1/
         ├── BusinessProfile.swift
         ├── MemberRowView.swift
         ├── MemberDetailView.swift
-        └── InviteMemberView.swift
+        ├── InviteMemberView.swift
+        └── ScopeItemLibrary/
+            ├── ScopeItemLibraryView.swift
+            ├── ScopeItemTemplateRowView.swift
+            └── AddScopeItemTemplateView.swift
 ```

@@ -27,6 +27,15 @@ public final class Client {
 
     public var createdAt: Date
     public var updatedAt: Date
+    
+    // MARK: - Portal Fields
+    
+    /// Secure token for client portal access via magic link
+    public var portalToken: String?
+    /// When the portal token was created
+    public var portalTokenCreatedAt: Date?
+    /// Whether portal access is enabled for this client
+    public var portalEnabled: Bool = false
 
     // MARK: - Relationships
 
