@@ -66,5 +66,8 @@ enum DesignConstants {
         static let quickResponse: Double = 0.3
         static let morphResponse: Double = 0.4
         static let morphDamping: Double = 0.8
+        
+        // Mesh background transition
+        static let meshTransitionDuration: Double = 0.6
     }
 }

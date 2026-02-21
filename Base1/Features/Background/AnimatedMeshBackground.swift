@@ -4,261 +4,308 @@
 //
 //  Created by Nicholas Lachapelle on 2026-02-09.
 //
+
 import SwiftUI
 
-public struct AnimatedMeshBackground: View {
-    public let scheme: MeshScheme
+// MARK: - Wave Mask Shape
+
+/// A shape that creates a vertical wave edge for liquid-like transitions.
+/// The wave sweeps horizontally based on progress, creating a water-sliding effect.
+struct WaveMask: Shape {
+    /// Progress of the wave (0 = no reveal, 1 = fully revealed)
+    var progress: CGFloat
     
-    public init(scheme: MeshScheme) {
-        self.scheme = scheme
+    /// Height of the wave curves
+    var amplitude: CGFloat
+    
+    /// Number of wave cycles along the vertical edge
+    var frequency: CGFloat
+    
+    /// Whether the wave sweeps from right to left (true) or left to right (false)
+    var reversed: Bool
+    
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
     }
     
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let width = rect.width
+        let height = rect.height
+        
+        if reversed {
+            // Wave sweeps from right to left
+            let waveX = width * (1.0 - progress)
+            
+            // Start at top-right corner
+            path.move(to: CGPoint(x: width, y: 0))
+            
+            // Draw vertical wave edge (going down)
+            for y in stride(from: 0, through: height, by: 1) {
+                let relativeY = y / height
+                let offset = sin(relativeY * frequency * .pi * 2 + progress * 5) * amplitude
+                let x = waveX + offset
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            // Close shape along right edge
+            path.addLine(to: CGPoint(x: width, y: height))
+            path.closeSubpath()
+        } else {
+            // Wave sweeps from left to right
+            let waveX = width * progress
+            
+            // Start at top-left corner
+            path.move(to: .zero)
+            
+            // Move to wave start point at top
+            path.addLine(to: CGPoint(x: waveX, y: 0))
+            
+            // Draw vertical wave edge (going down)
+            for y in stride(from: 0, through: height, by: 1) {
+                let relativeY = y / height
+                let offset = sin(relativeY * frequency * .pi * 2 + progress * 5) * amplitude
+                let x = waveX + offset
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            // Close shape along left and top edges
+            path.addLine(to: CGPoint(x: 0, y: height))
+            path.closeSubpath()
+        }
+        
+        return path
+    }
+}
+
+// MARK: - Liquid Background
+
+/// A two-layer gradient background with wave-masked transitions.
+/// Replaces MeshGradient with cleaner radial gradients and a custom wave mask
+/// for smooth, water-like transitions between color schemes.
+public struct AnimatedMeshBackground: View {
+    @Environment(BackgroundState.self) private var backgroundState
     @Environment(\.colorScheme) private var colorScheme
     
+    public init() {}
+    
     public var body: some View {
-        TimelineView(.animation) { context in
-            let s = context.date.timeIntervalSince1970
-            let v = Float(sin(s)) / 16
+        ZStack(alignment: .top) {
+            // Base layer: current scheme gradient
+            backgroundState.currentScheme.gradient(for: colorScheme)
+                .ignoresSafeArea()
             
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: [
-                    SIMD2<Float>(0.0, 0.0), SIMD2<Float>(0.5, 0.0), SIMD2<Float>(1.0, 0.0),
-                    SIMD2<Float>(0.0, 0.5), SIMD2<Float>(0.5 + v, 0.5 - v), SIMD2<Float>(1.0, 0.5 - v),
-                    SIMD2<Float>(0.0, 1.0), SIMD2<Float>(0.5 - v, 1.0), SIMD2<Float>(1.0, 1.0),
-                ],
-                colors: colors(for: scheme, in: colorScheme)
-            )
+            // Incoming layer: next scheme with wave mask (only during transitions)
+            if let nextScheme = backgroundState.nextScheme {
+                nextScheme.gradient(for: colorScheme)
+                    .ignoresSafeArea()
+                    .mask(
+                        WaveMask(
+                            progress: backgroundState.waveProgress,
+                            amplitude: backgroundState.waveAmplitude,
+                            frequency: backgroundState.waveFrequency,
+                            reversed: backgroundState.transitionDirection == .left
+                        )
+                    )
+            }
+            
+            #if DEBUG
+            BackgroundTuningPanel()
+            #endif
         }
-        .ignoresSafeArea()
+    }
+}
+
+// MARK: - Legacy Initializer
+
+extension AnimatedMeshBackground {
+    /// Legacy initializer - scheme is now read from BackgroundState environment
+    @available(*, deprecated, message: "Use init() instead. Scheme is now managed by BackgroundState.")
+    public init(scheme: MeshScheme) {
+        // Scheme parameter is ignored - BackgroundState controls the scheme
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Gold - Light") {
+    let state = BackgroundState()
+    state.setScheme(.gold)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Gold - Dark") {
+    let state = BackgroundState()
+    state.setScheme(.gold)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Blue - Light") {
+    let state = BackgroundState()
+    state.setScheme(.blue)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Blue - Dark") {
+    let state = BackgroundState()
+    state.setScheme(.blue)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Violet - Light") {
+    let state = BackgroundState()
+    state.setScheme(.violet)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.light)
+}
+
+#Preview("Violet - Dark") {
+    let state = BackgroundState()
+    state.setScheme(.violet)
+    return AnimatedMeshBackground()
+        .environment(state)
+        .preferredColorScheme(.dark)
+}
+
+// MARK: - Debug Tuning Panel
+
+#if DEBUG
+struct BackgroundTuningPanel: View {
+    @Environment(BackgroundState.self) private var backgroundState
+    @State private var showTuningPanel = false
+    
+    var body: some View {
+        if showTuningPanel {
+            @Bindable var state = backgroundState
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Background Tuning")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Button {
+                        showTuningPanel = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                
+                TuningSlider(
+                    label: "Duration",
+                    value: $state.transitionDuration,
+                    range: 0.5...4.0,
+                    format: "%.1fs"
+                )
+                
+                TuningSlider(
+                    label: "Amplitude",
+                    value: Binding(
+                        get: { Double(state.waveAmplitude) },
+                        set: { state.waveAmplitude = CGFloat($0) }
+                    ),
+                    range: 0...80,
+                    format: "%.0f"
+                )
+                
+                TuningSlider(
+                    label: "Frequency",
+                    value: Binding(
+                        get: { Double(state.waveFrequency) },
+                        set: { state.waveFrequency = CGFloat($0) }
+                    ),
+                    range: 1...8,
+                    format: "%.1f"
+                )
+                
+                HStack(spacing: 12) {
+                    Button("← Test Left") {
+                        backgroundState.transition(to: nextScheme(), direction: .left)
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button("Test Right →") {
+                        backgroundState.transition(to: nextScheme(), direction: .right)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .font(.caption)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Current: \(backgroundState.currentScheme.rawValue)")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.6))
+                    
+                    if let next = backgroundState.nextScheme {
+                        Text("Next: \(next.rawValue) (\(Int(backgroundState.waveProgress * 100))%)")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding()
+            .padding(.top, 60)
+        } else {
+            // Small toggle button in corner
+            Button {
+                showTuningPanel = true
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .padding(.top, 60)
+            .padding(.leading, 80)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
     
-    private func colors(for scheme: MeshScheme, in colorScheme: ColorScheme) -> [Color] {
-        let isLight = colorScheme == .light
-        
-        switch scheme {
-            
-        case .gold: // #E0BC16
-            if isLight {
-                return [
-                    Color(red: 1.0, green: 0.98, blue: 0.85),
-                    Color(red: 0.95, green: 0.85, blue: 0.40),
-                    Color(red: 0.90, green: 0.80, blue: 0.20),
-                    
-                    Color(red: 1.0, green: 0.98, blue: 0.90),
-                    Color(red: 0.98, green: 0.90, blue: 0.50),
-                    Color(red: 0.92, green: 0.82, blue: 0.30),
-                    
-                    Color(red: 1.0, green: 0.95, blue: 0.88),
-                    Color(red: 0.95, green: 0.88, blue: 0.45),
-                    Color(red: 0.85, green: 0.75, blue: 0.25),
-                ]
-            } else {
-                return [
-                    Color(red: 0.95, green: 0.88, blue: 0.50),
-                    Color(red: 0.88, green: 0.74, blue: 0.09),
-                    Color(red: 0.72, green: 0.60, blue: 0.05),
-                    
-                    Color(red: 1.00, green: 0.93, blue: 0.65),
-                    Color(red: 0.90, green: 0.78, blue: 0.25),
-                    Color(red: 0.75, green: 0.62, blue: 0.15),
-                    
-                    Color(red: 0.98, green: 0.90, blue: 0.75),
-                    Color(red: 0.85, green: 0.70, blue: 0.20),
-                    Color(red: 0.60, green: 0.50, blue: 0.10),
-                ]
-            }
-            
-        case .amber: // #E07416
-            if isLight {
-                return [
-                    Color(red: 1.0, green: 0.90, blue: 0.80),
-                    Color(red: 1.0, green: 0.75, blue: 0.50),
-                    Color(red: 0.95, green: 0.60, blue: 0.30),
-                    
-                    Color(red: 1.0, green: 0.95, blue: 0.85),
-                    Color(red: 1.0, green: 0.80, blue: 0.60),
-                    Color(red: 0.98, green: 0.65, blue: 0.40),
-                    
-                    Color(red: 1.0, green: 0.92, blue: 0.85),
-                    Color(red: 1.0, green: 0.70, blue: 0.45),
-                    Color(red: 0.90, green: 0.55, blue: 0.35),
-                ]
-            } else {
-                return [
-                    Color(red: 0.95, green: 0.65, blue: 0.35),
-                    Color(red: 0.88, green: 0.45, blue: 0.09),
-                    Color(red: 0.70, green: 0.32, blue: 0.05),
-                    
-                    Color(red: 1.00, green: 0.78, blue: 0.55),
-                    Color(red: 0.90, green: 0.55, blue: 0.20),
-                    Color(red: 0.75, green: 0.40, blue: 0.15),
-                    
-                    Color(red: 0.98, green: 0.85, blue: 0.70),
-                    Color(red: 0.85, green: 0.50, blue: 0.25),
-                    Color(red: 0.60, green: 0.30, blue: 0.15),
-                ]
-            }
-            
-        case .blue: // #1F76E8
-            if isLight {
-                return [
-                    Color(red: 0.85, green: 0.92, blue: 1.0),
-                    Color(red: 0.60, green: 0.80, blue: 1.0),
-                    Color(red: 0.40, green: 0.60, blue: 0.90),
-                    
-                    Color(red: 0.90, green: 0.95, blue: 1.0),
-                    Color(red: 0.70, green: 0.85, blue: 1.0),
-                    Color(red: 0.50, green: 0.70, blue: 0.95),
-                    
-                    Color(red: 0.92, green: 0.96, blue: 1.0),
-                    Color(red: 0.75, green: 0.88, blue: 1.0),
-                    Color(red: 0.55, green: 0.75, blue: 0.92),
-                ]
-            } else {
-                return [
-                    Color(red: 0.15, green: 0.30, blue: 0.55),
-                    Color(red: 0.12, green: 0.46, blue: 0.91),
-                    Color(red: 0.08, green: 0.25, blue: 0.55),
-                    
-                    Color(red: 0.45, green: 0.65, blue: 0.95),
-                    Color(red: 0.25, green: 0.50, blue: 0.85),
-                    Color(red: 0.15, green: 0.35, blue: 0.70),
-                    
-                    Color(red: 0.65, green: 0.78, blue: 0.98),
-                    Color(red: 0.30, green: 0.55, blue: 0.90),
-                    Color(red: 0.10, green: 0.25, blue: 0.55),
-                ]
-            }
-            
-        case .crimson: // #990E0D
-            if isLight {
-                return [
-                    Color(red: 1.0, green: 0.90, blue: 0.90),
-                    Color(red: 1.0, green: 0.70, blue: 0.70),
-                    Color(red: 0.90, green: 0.50, blue: 0.50),
-                    
-                    Color(red: 1.0, green: 0.95, blue: 0.95),
-                    Color(red: 1.0, green: 0.80, blue: 0.80),
-                    Color(red: 0.95, green: 0.60, blue: 0.60),
-                    
-                    Color(red: 1.0, green: 0.92, blue: 0.92),
-                    Color(red: 1.0, green: 0.75, blue: 0.75),
-                    Color(red: 0.92, green: 0.55, blue: 0.55),
-                ]
-            } else {
-                return [
-                    Color(red: 0.60, green: 0.06, blue: 0.05),
-                    Color(red: 0.85, green: 0.20, blue: 0.18),
-                    Color(red: 0.45, green: 0.05, blue: 0.05),
-                    
-                    Color(red: 0.95, green: 0.45, blue: 0.40),
-                    Color(red: 0.75, green: 0.15, blue: 0.12),
-                    Color(red: 0.55, green: 0.10, blue: 0.10),
-                    
-                    Color(red: 0.98, green: 0.65, blue: 0.60),
-                    Color(red: 0.65, green: 0.20, blue: 0.18),
-                    Color(red: 0.35, green: 0.05, blue: 0.05),
-                ]
-            }
-            
-        case .mint: // #0BBA77
-            if isLight {
-                return [
-                    Color(red: 0.90, green: 1.0, blue: 0.95),
-                    Color(red: 0.70, green: 0.95, blue: 0.85),
-                    Color(red: 0.50, green: 0.85, blue: 0.70),
-                    
-                    Color(red: 0.95, green: 1.0, blue: 0.98),
-                    Color(red: 0.80, green: 0.98, blue: 0.90),
-                    Color(red: 0.60, green: 0.90, blue: 0.80),
-                    
-                    Color(red: 0.92, green: 1.0, blue: 0.96),
-                    Color(red: 0.75, green: 0.96, blue: 0.88),
-                    Color(red: 0.55, green: 0.88, blue: 0.75),
-                ]
-            } else {
-                return [
-                    Color(red: 0.05, green: 0.35, blue: 0.25),
-                    Color(red: 0.04, green: 0.73, blue: 0.47),
-                    Color(red: 0.05, green: 0.50, blue: 0.35),
-                    
-                    Color(red: 0.40, green: 0.90, blue: 0.70),
-                    Color(red: 0.20, green: 0.80, blue: 0.60),
-                    Color(red: 0.10, green: 0.60, blue: 0.45),
-                    
-                    Color(red: 0.70, green: 0.95, blue: 0.85),
-                    Color(red: 0.25, green: 0.75, blue: 0.55),
-                    Color(red: 0.05, green: 0.40, blue: 0.30),
-                ]
-            }
-            
-        case .violet: // #A66EA4
-            if isLight {
-                return [
-                    Color(red: 0.95, green: 0.90, blue: 0.95),
-                    Color(red: 0.90, green: 0.80, blue: 0.90),
-                    Color(red: 0.80, green: 0.65, blue: 0.80),
-                    
-                    Color(red: 0.98, green: 0.95, blue: 0.98),
-                    Color(red: 0.95, green: 0.85, blue: 0.95),
-                    Color(red: 0.85, green: 0.75, blue: 0.85),
-                    
-                    Color(red: 0.96, green: 0.92, blue: 0.96),
-                    Color(red: 0.92, green: 0.82, blue: 0.92),
-                    Color(red: 0.82, green: 0.70, blue: 0.85),
-                ]
-            } else {
-                return [
-                    Color(red: 0.40, green: 0.25, blue: 0.40),
-                    Color(red: 0.65, green: 0.43, blue: 0.64),
-                    Color(red: 0.30, green: 0.15, blue: 0.30),
-                    
-                    Color(red: 0.85, green: 0.70, blue: 0.85),
-                    Color(red: 0.70, green: 0.50, blue: 0.70),
-                    Color(red: 0.50, green: 0.30, blue: 0.50),
-                    
-                    Color(red: 0.95, green: 0.85, blue: 0.95),
-                    Color(red: 0.60, green: 0.45, blue: 0.65),
-                    Color(red: 0.35, green: 0.20, blue: 0.40),
-                ]
-            }
-        case .teal: // #008080
-            if isLight {
-                return [
-                    Color(red: 0.85, green: 0.95, blue: 0.95),
-                    Color(red: 0.60, green: 0.90, blue: 0.90),
-                    Color(red: 0.40, green: 0.80, blue: 0.80),
-                    
-                    Color(red: 0.90, green: 0.98, blue: 0.98),
-                    Color(red: 0.70, green: 0.92, blue: 0.92),
-                    Color(red: 0.50, green: 0.85, blue: 0.85),
-                    
-                    Color(red: 0.95, green: 1.0, blue: 1.0),
-                    Color(red: 0.80, green: 0.95, blue: 0.95),
-                    Color(red: 0.60, green: 0.88, blue: 0.88),
-                ]
-            } else {
-                return [
-                    Color(red: 0.0, green: 0.4, blue: 0.4),
-                    Color(red: 0.0, green: 0.6, blue: 0.6),
-                    Color(red: 0.0, green: 0.3, blue: 0.3),
-                    
-                    Color(red: 0.2, green: 0.7, blue: 0.7),
-                    Color(red: 0.1, green: 0.5, blue: 0.5),
-                    Color(red: 0.0, green: 0.4, blue: 0.4),
-                    
-                    Color(red: 0.4, green: 0.8, blue: 0.8),
-                    Color(red: 0.1, green: 0.6, blue: 0.6),
-                    Color(red: 0.0, green: 0.3, blue: 0.3),
-                ]
-            }
+    private func nextScheme() -> MeshScheme {
+        let all = MeshScheme.allCases
+        guard let currentIndex = all.firstIndex(of: backgroundState.currentScheme) else {
+            return .gold
         }
+        let nextIndex = (currentIndex + 1) % all.count
+        return all[nextIndex]
     }
 }
 
-
-#Preview {
-    AnimatedMeshBackground(scheme: .violet)
+struct TuningSlider: View {
+    let label: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let format: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Text(String(format: format, value))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            Slider(value: $value, in: range)
+                .tint(.white.opacity(0.8))
+        }
+    }
 }
+#endif

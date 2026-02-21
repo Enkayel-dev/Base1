@@ -22,7 +22,7 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
 
-            AnimatedMeshBackground(scheme: backgroundState.scheme)
+            AnimatedMeshBackground()
 
             TabContentView()
 
@@ -61,29 +61,33 @@ struct MainTabView: View {
             response: DesignConstants.Animation.morphResponse,
             dampingFraction: DesignConstants.Animation.morphDamping
         ), value: drawerRouter.isPresented)
-        .onChange(of: tabRouter.selectedTab) { _, newIndex in
-            withAnimation(.easeInOut(duration: 0.6)) {
-                if !tabRouter.isSettingsActive && !tabRouter.isBusinessProfileActive {
-                    backgroundState.scheme = backgroundService.preferredScheme(for: newIndex)
-                }
+        .onChange(of: tabRouter.selectedTab) { oldIndex, newIndex in
+            if !tabRouter.isSettingsActive && !tabRouter.isBusinessProfileActive {
+                let direction: TransitionDirection = newIndex > oldIndex ? .right : .left
+                backgroundState.transition(
+                    to: backgroundService.preferredScheme(for: newIndex),
+                    direction: direction
+                )
             }
         }
         .onChange(of: tabRouter.isSettingsActive) { _, isActive in
-            withAnimation(.easeInOut(duration: 0.6)) {
-                if isActive {
-                    backgroundState.scheme = .violet
-                } else if !tabRouter.isBusinessProfileActive {
-                    backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
-                }
+            if isActive {
+                backgroundState.transition(to: .violet, direction: .left)
+            } else if !tabRouter.isBusinessProfileActive {
+                backgroundState.transition(
+                    to: backgroundService.preferredScheme(for: tabRouter.selectedTab),
+                    direction: .right
+                )
             }
         }
         .onChange(of: tabRouter.isBusinessProfileActive) { _, isActive in
-            withAnimation(.easeInOut(duration: 0.6)) {
-                if isActive {
-                    backgroundState.scheme = .teal
-                } else if !tabRouter.isSettingsActive {
-                    backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
-                }
+            if isActive {
+                backgroundState.transition(to: .teal, direction: .right)
+            } else if !tabRouter.isSettingsActive {
+                backgroundState.transition(
+                    to: backgroundService.preferredScheme(for: tabRouter.selectedTab),
+                    direction: .left
+                )
             }
         }
                     .onAppear {
@@ -94,9 +98,8 @@ struct MainTabView: View {
                         modelContext.insert(template)
                         workflowService.startWorkflow(from: template)
 
-                        withAnimation(.easeInOut(duration: 0.6)) {
-                            backgroundState.scheme = backgroundService.preferredScheme(for: tabRouter.selectedTab)
-                        }
+                        // Set initial scheme without animation
+                        backgroundState.setScheme(backgroundService.preferredScheme(for: tabRouter.selectedTab))
                     }
                 }
     // MARK: - Tab Content

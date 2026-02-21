@@ -17,14 +17,12 @@ final class BackgroundCoordinator {
         self.state = state
     }
     
-    func tabDidChange(to index: Int) {
-        let newScheme = service.preferredScheme(for: index)
+    /// Transition background for tab change with direction detection
+    func tabDidChange(from oldIndex: Int, to newIndex: Int) {
+        let newScheme = service.preferredScheme(for: newIndex)
+        let direction: TransitionDirection = newIndex > oldIndex ? .right : .left
         
-        guard newScheme != state.scheme else { return }
-        
-        withAnimation(.easeInOut(duration: 0.6)) {
-            state.scheme = newScheme
-        }
+        state.transition(to: newScheme, direction: direction)
     }
 }
 
