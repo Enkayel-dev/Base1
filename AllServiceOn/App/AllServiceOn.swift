@@ -3,7 +3,7 @@ import SwiftData
 import Observation
 
 @main
-struct Base1App: App {
+struct AllServiceOn: App {
 
     // MARK: - Shared Observable State
     @State private var backgroundState = BackgroundState()
