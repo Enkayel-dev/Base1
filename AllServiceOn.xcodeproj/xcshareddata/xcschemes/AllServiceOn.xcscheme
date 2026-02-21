@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0192E5A02F3A252D000C1B67"
-               BuildableName = "Base1.app"
+               BuildableName = "AllServiceOn.app"
                BlueprintName = "Base1"
                ReferencedContainer = "container:AllServiceOn.xcodeproj">
             </BuildableReference>
@@ -44,12 +44,21 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0192E5A02F3A252D000C1B67"
-            BuildableName = "Base1.app"
-            BlueprintName = "Base1"
+            BlueprintIdentifier = "01165DC42F4A4F1E00591E9E"
+            BuildableName = "AllServiceOn.app"
+            BlueprintName = "AllServiceOn"
             ReferencedContainer = "container:AllServiceOn.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "0192E5A02F3A252D000C1B67"
+            BuildableName = "AllServiceOn.app"
+            BlueprintName = "Base1"
+            ReferencedContainer = "container:AllServiceOn.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -62,11 +71,20 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0192E5A02F3A252D000C1B67"
-            BuildableName = "Base1.app"
+            BuildableName = "AllServiceOn.app"
             BlueprintName = "Base1"
             ReferencedContainer = "container:AllServiceOn.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "0192E5A02F3A252D000C1B67"
+            BuildableName = "AllServiceOn.app"
+            BlueprintName = "Base1"
+            ReferencedContainer = "container:AllServiceOn.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

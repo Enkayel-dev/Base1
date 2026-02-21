@@ -7,32 +7,38 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		0192E5A12F3A252D000C1B67 /* Base1.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Base1.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01165DC52F4A4F1E00591E9E /* AllServiceOn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AllServiceOn.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01D71A322F4A4D66009B8581 /* Base1-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Base1-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		014E4CFC2F4A45B70032E218 /* Exceptions for "AllServiceOn" folder in "Base1" target */ = {
+		01165DD32F4A4F1F00591E9E /* Exceptions for "AllServiceOn" folder in "AllServiceOn" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 0192E5A02F3A252D000C1B67 /* Base1 */;
+			target = 01165DC42F4A4F1E00591E9E /* AllServiceOn */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0192E5A32F3A252D000C1B67 /* AllServiceOn */ = {
+		01165DC62F4A4F1E00591E9E /* AllServiceOn */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				014E4CFC2F4A45B70032E218 /* Exceptions for "AllServiceOn" folder in "Base1" target */,
+				01165DD32F4A4F1F00591E9E /* Exceptions for "AllServiceOn" folder in "AllServiceOn" target */,
 			);
+			path = AllServiceOn;
+			sourceTree = "<group>";
+		};
+		0192E5A32F3A252D000C1B67 /* AllServiceOn */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AllServiceOn;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		0192E59E2F3A252D000C1B67 /* Frameworks */ = {
+		01165DC22F4A4F1E00591E9E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -45,7 +51,9 @@
 		0192E5982F3A252D000C1B67 = {
 			isa = PBXGroup;
 			children = (
+				01D71A322F4A4D66009B8581 /* Base1-Info.plist */,
 				0192E5A32F3A252D000C1B67 /* AllServiceOn */,
+				01165DC62F4A4F1E00591E9E /* AllServiceOn */,
 				0192E5A22F3A252D000C1B67 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,7 +61,7 @@
 		0192E5A22F3A252D000C1B67 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0192E5A12F3A252D000C1B67 /* Base1.app */,
+				01165DC52F4A4F1E00591E9E /* AllServiceOn.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,26 +69,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0192E5A02F3A252D000C1B67 /* Base1 */ = {
+		01165DC42F4A4F1E00591E9E /* AllServiceOn */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0192E5AC2F3A252E000C1B67 /* Build configuration list for PBXNativeTarget "Base1" */;
+			buildConfigurationList = 01165DD42F4A4F1F00591E9E /* Build configuration list for PBXNativeTarget "AllServiceOn" */;
 			buildPhases = (
-				0192E59D2F3A252D000C1B67 /* Sources */,
-				0192E59E2F3A252D000C1B67 /* Frameworks */,
-				0192E59F2F3A252D000C1B67 /* Resources */,
+				01165DC12F4A4F1E00591E9E /* Sources */,
+				01165DC22F4A4F1E00591E9E /* Frameworks */,
+				01165DC32F4A4F1E00591E9E /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				0192E5A32F3A252D000C1B67 /* AllServiceOn */,
+				01165DC62F4A4F1E00591E9E /* AllServiceOn */,
 			);
-			name = Base1;
+			name = AllServiceOn;
 			packageProductDependencies = (
 			);
-			productName = Base1;
-			productReference = 0192E5A12F3A252D000C1B67 /* Base1.app */;
+			productName = AllServiceOn;
+			productReference = 01165DC52F4A4F1E00591E9E /* AllServiceOn.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -93,7 +101,7 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
-					0192E5A02F3A252D000C1B67 = {
+					01165DC42F4A4F1E00591E9E = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -112,13 +120,13 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0192E5A02F3A252D000C1B67 /* Base1 */,
+				01165DC42F4A4F1E00591E9E /* AllServiceOn */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		0192E59F2F3A252D000C1B67 /* Resources */ = {
+		01165DC32F4A4F1E00591E9E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -128,7 +136,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		0192E59D2F3A252D000C1B67 /* Sources */ = {
+		01165DC12F4A4F1E00591E9E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -138,6 +146,74 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		01165DD12F4A4F1F00591E9E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AllServiceOn/AllServiceOn.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = F67RM7HVG2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AllServiceOn/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Enkayel.AllServiceOn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		01165DD22F4A4F1F00591E9E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AllServiceOn/AllServiceOn.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = F67RM7HVG2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AllServiceOn/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Enkayel.AllServiceOn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		0192E5AA2F3A252E000C1B67 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -259,95 +335,23 @@
 			};
 			name = Release;
 		};
-		0192E5AD2F3A252E000C1B67 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = F67RM7HVG2;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Base1/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AllServiceOn;
-				"INFOPLIST_KEY_CFBundleDisplayName[sdk=iphoneos*]" = AllServiceOn;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Enkayel.AllServiceOn;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		0192E5AE2F3A252E000C1B67 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = F67RM7HVG2;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Base1/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AllServiceOn;
-				"INFOPLIST_KEY_CFBundleDisplayName[sdk=iphoneos*]" = AllServiceOn;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Enkayel.AllServiceOn;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		01165DD42F4A4F1F00591E9E /* Build configuration list for PBXNativeTarget "AllServiceOn" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				01165DD12F4A4F1F00591E9E /* Debug */,
+				01165DD22F4A4F1F00591E9E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		0192E59C2F3A252D000C1B67 /* Build configuration list for PBXProject "AllServiceOn" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0192E5AA2F3A252E000C1B67 /* Debug */,
 				0192E5AB2F3A252E000C1B67 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		0192E5AC2F3A252E000C1B67 /* Build configuration list for PBXNativeTarget "Base1" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				0192E5AD2F3A252E000C1B67 /* Debug */,
-				0192E5AE2F3A252E000C1B67 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

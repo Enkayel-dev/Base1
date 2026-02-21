@@ -28,7 +28,7 @@ struct AuthView: View {
                         .font(.system(size: 80))
                         .foregroundStyle(.white)
                     
-                    Text("Base1")
+                    Text("AllServiceOn")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
